@@ -1,0 +1,88 @@
+{
+    "easycom": {
+        "^u-(.*)": "@/uview-ui/components/u-$1/u-$1.vue",
+        "^wf-(.*)": "@/components/wf-ui/components/wf-$1/wf-$1.vue"
+    },
+    "pages": [
+        {
+            "path": "pages/plugin/workflow/pages/workbench/index",
+            "style": {
+                "navigationBarTitleText": "工作台",
+                "enablePullDownRefresh": true,
+                "navigationStyle": "custom"
+            }
+        },
+
+        {
+            "path": "pages/plugin/workflow/pages/create/index",
+            "style": {
+                "navigationBarTitleText": "新建流程",
+                "enablePullDownRefresh": true,
+                "navigationStyle": "custom"
+            }
+        },
+        {
+            "path": "pages/plugin/workflow/pages/mine/index",
+            "style": {
+                "navigationBarTitleText": "我的事务",
+                "enablePullDownRefresh": true,
+                "navigationStyle": "custom"
+            }
+        },
+        {
+            "path": "pages/plugin/workflow/pages/form/start",
+            "style": {
+                "navigationBarTitleText": "发起流程",
+                "enablePullDownRefresh": false
+            }
+        },
+        {
+            "path": "pages/plugin/workflow/pages/warehouse/index",
+            "style": {
+                "navigationBarTitleText": "仓库",
+                "enablePullDownRefresh": false
+            }
+        },
+        {
+            "path": "pages/plugin/workflow/pages/form/detail",
+            "style": {
+                "navigationBarTitleText": "流程详情",
+                "enablePullDownRefresh": false
+            }
+        },
+        {
+            "path": "pages/plugin/workflow/pages/external/Leave/start",
+            "style": {
+                "navigationBarTitleText": "发起流程",
+                "enablePullDownRefresh": false
+            }
+        },
+        {
+            "path": "pages/plugin/workflow/pages/external/Leave/detail",
+            "style": {
+                "navigationBarTitleText": "流程详情",
+                "enablePullDownRefresh": false
+            }
+        }
+    ],
+    "globalStyle": {
+        "navigationBarTextStyle": "black",
+        "navigationBarTitleText": "",
+        "navigationBarBackgroundColor": "#fff",
+        "backgroundColor": "#F7F7F7"
+    },
+    "tabBar": {
+        "color": "#AFB8C3",
+        "selectedColor": "#666",
+        "borderStyle": "white",
+        "backgroundColor": "#ffffff",
+        "list": [
+            {
+                "pagePath": "pages/plugin/workflow/pages/workbench/index",
+                "iconPath": "/static/images/tabbar/tab1.png",
+                "selectedIconPath": "./static/images/tabbar/tab1s.png",
+                "text": "工作台"
+            }
+        ]
+    }
+}
