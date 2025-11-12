@@ -15,20 +15,29 @@ import dcField from './components/dc-field/index.vue';
 import dcRadio from './components/dc-radio/index.vue';
 import dcScanV2 from './components/dc-scan-v2/index.vue';
 
-import Vue from 'vue';
-Vue.component('dc-scan-code', dcScanCode);
-Vue.component('dc-view', dcView);
-Vue.component('dc-dict-key', dcDictKey);
-Vue.component('dc-tabs', dcTabs);
-Vue.component('dc-select-popup', dcDictPopup);
-Vue.component('dc-select-dict', dcSelectDict);
-Vue.component('dc-number', dcNumber);
-Vue.component('dc-weight', dcWeight);
-Vue.component('dc-select-dialog', wfSelectDialog);
-Vue.component('dc-select-single', wfSelectSingle);
-Vue.component('dc-input-scan', dcInputScan);
-Vue.component('dc-drag-button', dcDragButton);
-Vue.component('dc-pagination', dcPagination);
-Vue.component('dc-field', dcField);
-Vue.component('dc-radio', dcRadio);
-Vue.component('dc-scan-v2', dcScanV2);
+const components = {
+  'dc-scan-code': dcScanCode,
+  'dc-view': dcView,
+  'dc-dict-key': dcDictKey,
+  'dc-tabs': dcTabs,
+  'dc-select-popup': dcDictPopup,
+  'dc-select-dict': dcSelectDict,
+  'dc-number': dcNumber,
+  'dc-weight': dcWeight,
+  'dc-select-dialog': wfSelectDialog,
+  'dc-select-single': wfSelectSingle,
+  'dc-input-scan': dcInputScan,
+  'dc-drag-button': dcDragButton,
+  'dc-pagination': dcPagination,
+  'dc-field': dcField,
+  'dc-radio': dcRadio,
+  'dc-scan-v2': dcScanV2,
+};
+
+export default {
+  install(app) {
+    Object.entries(components).forEach(([name, component]) => {
+      app.component(name, component);
+    });
+  },
+};

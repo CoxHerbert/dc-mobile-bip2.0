@@ -1,4 +1,3 @@
-import Vue from 'vue';
 import { mergeRecursive } from '@/utils/utils';
 import DictMeta from './DictMeta';
 
@@ -6,12 +5,12 @@ const DEFAULT_DICT_OPTIONS = {
     types: [],
 };
 
-/**
- * @classdesc 字典
- * @property {Object} label 标签对象，内部属性名为字典类型名称
- * @property {Object} dict 字段数组，内部属性名为字典类型名称
- * @property {Array.<DictMeta>} _dictMetas 字典元数据数组
- */
+const set = (target, key, value) => {
+    if (target) {
+        target[key] = value;
+    }
+};
+
 export default class Dict {
     constructor() {
         this.owner = null;
@@ -31,8 +30,8 @@ export default class Dict {
         this._dictMetas = opts.types.map((t) => DictMeta.parse(t));
         this._dictMetas.forEach((dictMeta) => {
             const type = dictMeta.type;
-            Vue.set(this.label, type, {});
-            Vue.set(this.type, type, []);
+            set(this.label, type, {});
+            set(this.type, type, []);
             if (dictMeta.lazy) {
                 return;
             }
@@ -41,10 +40,6 @@ export default class Dict {
         return Promise.all(ps);
     }
 
-    /**
-     * 重新加载字典
-     * @param {String} type 字典类型
-     */
     reloadDict(type) {
         const dictMeta = this._dictMetas.find((e) => e.type === type);
         if (dictMeta === undefined) {
@@ -54,27 +49,14 @@ export default class Dict {
     }
 }
 
-/**
- * 加载字典
- * @param {Dict} dict 字典
- * @param {DictMeta} dictMeta 字典元数据
- * @returns {Promise}
- */
 function loadDict(dict, dictMeta) {
     return dictMeta.request(dictMeta).then((response) => {
         const type = dictMeta.type;
 
         let dicts = arrayToTree(response);
-        // if (!(dicts instanceof Array)) {
-        //     console.error('the return of responseConverter must be Array.<DictData>');
-        //     dicts = [];
-        // } else if (dicts.filter((d) => d instanceof DictData).length !== dicts.length) {
-        //     console.error('the type of elements in dicts must be DictData');
-        //     dicts = [];
-        // }
         dict.type[type].splice(0, Number.MAX_SAFE_INTEGER, ...dicts);
         dicts.forEach((d) => {
-            Vue.set(dict.label[type], d.value, d.label);
+            set(dict.label[type], d.value, d.label);
         });
         return dicts;
     });
@@ -84,7 +66,6 @@ function arrayToTree(data) {
     const map = new Map();
     const tree = [];
 
-    // 先将所有数据存入 Map，键为 id，值为对象本身
     data.forEach((item) => {
         map.set(item.id, { ...item, children: [] });
     });
@@ -92,7 +73,6 @@ function arrayToTree(data) {
     data.forEach((item) => {
         const node = map.get(item.id);
         if (item.parentId && map.has(item.parentId)) {
-            // 如果有 parentId，则加入对应的父节点的 children
             map.get(item.parentId).children.push({
                 ...node,
                 code: node.code,
@@ -100,7 +80,6 @@ function arrayToTree(data) {
                 value: node.id,
             });
         } else {
-            // 没有 parentId，则是根节点
             tree.push({
                 ...node,
                 code: node.code,

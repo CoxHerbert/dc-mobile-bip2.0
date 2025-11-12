@@ -3,7 +3,7 @@ import { options } from '@/http/config.js';
 import { Base64 } from '@/utils/base64.js';
 import Request from '@/utils/luch-request/index.js';
 import { isEnvironment } from '@/utils/utils.js';
-import store from '@/store/';
+import store from '@/store';
 const http = new Request(options);
 
 http.interceptors.request.use(

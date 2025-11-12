@@ -1,6 +1,6 @@
 <script>
 import { getUrlCode, isEnvironment, isEnvironmentOld } from '@/utils/utils.js';
-import store from '@/store/';
+import store from '@/store';
 
 export default {
     data() {
@@ -251,9 +251,9 @@ export default {
 </script>
 <style lang="scss">
 /*uview全局样式*/
-@import 'uview-ui/index.scss';
+@import '@/uview-ui/index.scss';
 /*app全局样式*/
-@import 'static/style/app.scss';
+@import '@/static/style/app.scss';
 
 // 修改checkbox样式
 checkbox.curdCheck .wx-checkbox-input,
