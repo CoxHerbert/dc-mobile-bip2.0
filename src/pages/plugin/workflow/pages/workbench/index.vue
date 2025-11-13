@@ -1,39 +1,38 @@
 <template>
-    <view class="home-container">
-        <!-- 头部 -->
-        <view class="head-item">
-            <view class="title">工作台</view>
-            <view class="tips">{{ total > 0 ? `目前有${total}个待办事宜` : '目前没有待办事宜, 可以放松一下啦' }}</view>
-        </view>
-        <!-- gird -->
-        <view class="grid-item">
-            <view v-for="(item, index) in girdList" :key="index" @click="handleJump(item)" class="item">
-                <image :src="wfImage + `/home/icon_${item.type}.png`" class="icon"></image>
-                <view class="name">{{ item.name }}</view>
-            </view>
-        </view>
+    <div class="home-container">
+        <div class="head-item">
+            <div class="title">工作台</div>
+            <div class="tips">{{ total > 0 ? `目前有${total}个待办事宜` : '目前没有待办事宜, 可以放松一下啦' }}</div>
+        </div>
+        <div class="grid-item">
+            <div v-for="(item, index) in girdList" :key="index" @click="handleJump(item)" class="item">
+                <img :src="`${wfImage}/home/icon_${item.type}.png`" class="icon" alt="" />
+                <div class="name">{{ item.name }}</div>
+            </div>
+        </div>
 
-        <!-- 我的待办 -->
-        <view class="card-item" v-if="list.length > 0">
-            <view class="title">
-                <view class="line"></view>
-                <u-section
+        <div class="card-item" v-if="list.length > 0">
+            <div class="title">
+                <div class="line"></div>
+                <van-cell
+                    class="section-cell"
                     title="我的待办"
-                    font-size="34"
-                    :show-line="false"
+                    is-link
+                    :border="false"
                     @click="handleJump(girdList[0])"
-                ></u-section>
-            </view>
+                />
+            </div>
             <wkf-card v-if="list.length > 0" :list="list" show-btn @refresh="refreshTodo"></wkf-card>
-        </view>
+        </div>
         <wf-empty v-else text="工作再忙，也要记得喝水"></wf-empty>
 
-        <image
+        <img
             class="creat"
             src="@/static/images/tabbar/creact.png"
+            alt="发起流程"
             @click.stop="handleJump(girdList[1])"
-        ></image>
-    </view>
+        />
+    </div>
 </template>
 <script>
 import { defineComponent } from 'vue';
@@ -164,6 +163,21 @@ page {
                 background: #5470c4;
                 border-radius: 3rpx;
                 margin-right: 16rpx;
+            }
+            .section-cell {
+                flex: 1;
+                padding: 0;
+                background: transparent;
+                font-size: 34rpx;
+                color: #333;
+
+                .van-cell__value,
+                .van-cell__label {
+                    display: none;
+                }
+                .van-cell__title {
+                    font-weight: 500;
+                }
             }
         }
     }

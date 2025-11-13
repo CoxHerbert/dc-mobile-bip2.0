@@ -1,116 +1,75 @@
 <template>
-    <view>
-        <u-skeleton :loading="waiting" :animation="true"></u-skeleton>
-        <view class="u-skeleton" v-if="waiting">
-            <view style="display: flex; justify-content: space-between; align-items: flex-end">
-                <view class="u-skeleton-circle"></view>
-                <view class="u-skeleton-fillet" style="width: 550rpx; height: 50rpx"></view>
-            </view>
-            <view class="u-skeleton-fillet" style="height: 80rpx; margin: 50rpx 0"></view>
-            <view class="u-skeleton-fillet"></view>
-            <view class="u-skeleton-fillet"></view>
-            <view class="u-skeleton-fillet"></view>
-            <view class="u-skeleton-fillet"></view>
-            <view class="u-skeleton-fillet" style="width: 400rpx"></view>
-        </view>
-        <view class="detail" v-else>
-            <!-- 头部 -->
-            <view class="detail-head flex-between flex-c">
-                <u-avatar :text="process.startUsername" bg-color="#FAB022"></u-avatar>
-                <view class="flex-one c">
-                    <view class="leave bold txt-cut1">{{ process.processDefinitionName }}</view>
-                    <view class="name">{{ process.startUsername }}</view>
-                </view>
-                <u-tag v-if="process.status == 'todo'" text="审核中" type="success" size="mini" />
-                <u-tag v-else-if="process.status == 'delay'" text="已超时" type="error" size="mini" />
-                <template v-else-if="process.status == 'done'">
-                    <u-tag v-if="process.processIsFinished == 'unfinished'" text="审核中" type="success" size="mini" />
-                    <u-tag
-                        v-else-if="process.processIsFinished == 'finished'"
-                        text="已结束"
-                        type="success"
-                        size="mini"
-                    />
-                    <u-tag
-                        v-else-if="process.processIsFinished == 'terminate'"
-                        text="已终止"
-                        type="error"
-                        size="mini"
-                    />
-                    <u-tag v-else-if="process.processIsFinished == 'withdraw'" text="已撤销" type="error" size="mini" />
-                    <u-tag v-else-if="process.processIsFinished == 'recall'" text="已撤回" type="error" size="mini" />
-                    <u-tag v-else-if="process.processIsFinished == 'reject'" text="已驳回" type="error" size="mini" />
-                    <u-tag v-else-if="process.processIsFinished == 'deleted'" text="已删除" type="error" size="mini" />
+    <div class="workflow-form-detail">
+        <van-skeleton v-if="waiting" :row="6" animate />
+        <div class="detail" v-else>
+            <div class="detail-head flex-between flex-c">
+                <div class="detail-avatar" aria-hidden="true">{{ avatarText }}</div>
+                <div class="flex-one c">
+                    <div class="leave bold txt-cut1">{{ process.processDefinitionName }}</div>
+                    <div class="name">{{ process.startUsername }}</div>
+                </div>
+                <van-tag v-if="process.status === 'todo'" type="success" size="small">审核中</van-tag>
+                <van-tag v-else-if="process.status === 'delay'" type="danger" size="small">已超时</van-tag>
+                <template v-else-if="process.status === 'done'">
+                    <van-tag v-if="process.processIsFinished === 'unfinished'" type="success" size="small">审核中</van-tag>
+                    <van-tag v-else-if="process.processIsFinished === 'finished'" type="success" size="small">已结束</van-tag>
+                    <van-tag v-else-if="process.processIsFinished === 'terminate'" type="danger" size="small">已终止</van-tag>
+                    <van-tag v-else-if="process.processIsFinished === 'withdraw'" type="danger" size="small">已撤销</van-tag>
+                    <van-tag v-else-if="process.processIsFinished === 'recall'" type="danger" size="small">已撤回</van-tag>
+                    <van-tag v-else-if="process.processIsFinished === 'reject'" type="danger" size="small">已驳回</van-tag>
+                    <van-tag v-else-if="process.processIsFinished === 'deleted'" type="danger" size="small">已删除</van-tag>
                 </template>
-            </view>
-            <!-- tab -->
-            <u-tabs :list="tabList" :is-scroll="false" :current="current" @change="current = $event"></u-tabs>
-            <!-- 内容 -->
-            <view class="content">
-                <u-card
-                    v-show="current == 0"
-                    :show-head="false"
-                    margin="20rpx 0"
-                    padding="0"
-                    :border="false"
-                    :body-style="{ backgroundColor: '#f6f6f6' }"
-                >
-                    <view slot="body">
-                        <view
-                            class="split-line"
-                            v-if="
-                                summaryOption &&
-                                ((summaryOption.column && summaryOption.column.length > 0) ||
-                                    (summaryOption.group && summaryOption.group.length > 0))
-                            "
-                        >
-                            <renderer-compare-panel
-                                v-if="enableRendererCompare"
-                                v-model="form"
-                                :option="summaryOption"
-                            ></renderer-compare-panel>
-                            <wf-form
-                                v-else
-                                v-model="form"
-                                ref="summaryForm"
-                                :option="summaryOption"
-                            ></wf-form>
-                        </view>
-                        <view
-                            class="split-line"
-                            v-if="
-                                option &&
-                                ((option.column && option.column.length > 0) ||
-                                    (option.group && option.group.length > 0))
-                            "
-                        >
-                            <renderer-compare-panel
-                                v-if="enableRendererCompare"
-                                v-model="form"
-                                :option="option"
-                            ></renderer-compare-panel>
-                            <wf-form
-                                v-else
-                                ref="form"
-                                v-model="form"
-                                :option="option"
-                            ></wf-form>
-                        </view>
-                        <view class="split-line" v-if="process.status == 'todo'">
-                            <wkf-exam-form
-                                ref="examineForm"
-                                :process="process"
-                                :comment.sync="comment"
-                                @user-select="handleUserSelect"
-                            ></wkf-exam-form>
-                        </view>
-                    </view>
-                </u-card>
-                <view class="" style="padding: 30rpx" v-show="current == 1"><wkf-flow :flow="flow"></wkf-flow></view>
-                <!-- <WfBpmn v-if="current == 2" :bpmnOption="bpmnOption"></WfBpmn> -->
-                <WfBpmn v-if="current == 2" :bpmnOption="h5bpmn"></WfBpmn>
-            </view>
-            <!-- 选人 -->
+            </div>
+            <van-tabs v-model:active="current" :border="false" class="detail-tabs">
+                <van-tab v-for="(tab, index) in tabList" :key="tab.name" :title="tab.name" :name="index" />
+            </van-tabs>
+            <div class="content">
+                <div v-show="current === 0" class="detail-card">
+                    <div
+                        class="split-line"
+                        v-if="
+                            summaryOption &&
+                            ((summaryOption.column && summaryOption.column.length > 0) ||
+                                (summaryOption.group && summaryOption.group.length > 0))
+                        "
+                    >
+                        <renderer-compare-panel
+                            v-if="enableRendererCompare"
+                            v-model="form"
+                            :option="summaryOption"
+                        ></renderer-compare-panel>
+                        <wf-form
+                            v-else
+                            v-model="form"
+                            ref="summaryForm"
+                            :option="summaryOption"
+                        ></wf-form>
+                    </div>
+                    <div
+                        class="split-line"
+                        v-if="option && ((option.column && option.column.length > 0) || (option.group && option.group.length > 0))"
+                    >
+                        <renderer-compare-panel
+                            v-if="enableRendererCompare"
+                            v-model="form"
+                            :option="option"
+                        ></renderer-compare-panel>
+                        <wf-form v-else ref="form" v-model="form" :option="option"></wf-form>
+                    </div>
+                    <div class="split-line" v-if="process.status === 'todo'">
+                        <wkf-exam-form
+                            ref="examineForm"
+                            :process="process"
+                            v-model:comment="comment"
+                            @user-select="handleUserSelect"
+                        ></wkf-exam-form>
+                    </div>
+                </div>
+                <div class="flow-wrapper" v-show="current === 1">
+                    <wkf-flow :flow="flow"></wkf-flow>
+                </div>
+                <WfBpmn v-if="current === 2" :bpmnOption="h5bpmn"></WfBpmn>
+            </div>
             <wkf-user-select
                 ref="user-select"
                 :check-type="checkType"
@@ -129,23 +88,21 @@
                 @terminate="handleTerminateProcess"
                 @withdraw="handleWithdrawTask"
             ></wkf-button>
-            <!-- 保存至草稿箱 -->
-            <u-modal
-                v-model="saveDraftShow"
-                content="保存至草稿箱并关闭？"
+            <van-dialog
+                v-model:show="saveDraftShow"
                 show-cancel-button
+                message="保存至草稿箱并关闭？"
                 @confirm="handleDraftSubmit(process.taskId)"
-            ></u-modal>
-            <!-- 恢复草稿箱 -->
-            <u-modal
-                v-model="recoverDraftShow"
-                content="是否恢复之前保存的草稿？"
+            />
+            <van-dialog
+                v-model:show="recoverDraftShow"
                 show-cancel-button
+                message="是否恢复之前保存的草稿？"
                 @confirm="handleRevocerDraftSubmit"
                 @cancel="form = tempVariables"
-            ></u-modal>
-        </view>
-    </view>
+            />
+        </div>
+    </div>
 </template>
 <script>
 import { defineComponent } from 'vue';
@@ -181,6 +138,11 @@ export default defineComponent({
     computed: {
         enableRendererCompare() {
             return isRendererTestEnvironment();
+        },
+        avatarText() {
+            const username = this.process?.startUsername || '';
+            if (!username) return '';
+            return username.substring(0, 1);
         },
     },
     created() {
@@ -445,20 +407,31 @@ page {
         padding: 0 0 30rpx;
     }
 }
-.u-skeleton {
-    height: 100vh;
+.detail-avatar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 90rpx;
+    height: 90rpx;
+    border-radius: 50%;
+    background-color: #fab022;
+    color: #fff;
+    font-size: 34rpx;
+    font-weight: 500;
+}
+
+.detail-card {
+    background: #fff;
+    margin: 20rpx 0;
+    padding: 0 0 20rpx;
+}
+
+.flow-wrapper {
     padding: 30rpx;
+}
 
-    .u-skeleton-circle {
-        height: 90rpx;
-        width: 90rpx;
-        margin-bottom: 30rpx;
-    }
-
-    .u-skeleton-fillet {
-        height: 100rpx;
-        width: 100%;
-        margin-bottom: 30rpx;
-    }
+.workflow-form-detail {
+    min-height: 100vh;
+    background: #f6f6f6;
 }
 </style>

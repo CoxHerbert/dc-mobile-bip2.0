@@ -1,122 +1,175 @@
 <template>
-    <view class="wf-feasibility">
-        <view class="header-row">
-            <view class="ceil">评审内容</view>
-            <view class="ceil">总分</view>
-            <view class="ceil">评分</view>
-         </view> 
-        <view v-for="(col, i) in valueSet" :key="i" class="content-row">
-            <view class="ceil">{{ col.feaEvaluationConclusion }}</view>
-            <view class="ceil">{{ col.feaEvaluationTotalScore }}</view>
-            <view class="ceil">
-                <u-input class="input-item" type="number" :max="col.feaEvaluationTotalScore" placeholder="请输入" v-model="value[i].feaEvaluationScore" @input="(val) => {
-                    handleInput(val, i)
-                }" @blur="(val) => {
-                    handleInput(val, i)
-                }" />
-            </view> 
-        </view>
-        <view  class="content-row">
-            <view class="ceil">总分</view>
-            <view class="ceil">{{ total }}</view>
-            <view class="ceil">{{ hasScore }}</view> 
-        </view> 
-    </view>
+  <div class="wf-feasibility">
+    <div class="header-row">
+      <div class="ceil">评审内容</div>
+      <div class="ceil">总分</div>
+      <div class="ceil">评分</div>
+    </div>
+    <div v-for="(col, i) in localValue" :key="i" class="content-row">
+      <div class="ceil">{{ col.feaEvaluationConclusion }}</div>
+      <div class="ceil">{{ col.feaEvaluationTotalScore }}</div>
+      <div class="ceil score-cell">
+        <van-field
+          class="input-item"
+          type="number"
+          input-align="center"
+          :maxlength="6"
+          placeholder="请输入"
+          v-model="localValue[i].feaEvaluationScore"
+          @blur="(event) => handleInput(event.target.value, i)"
+          @update:model-value="(val) => handleInput(val, i)"
+        />
+      </div>
+    </div>
+    <div class="content-row summary-row">
+      <div class="ceil">总分</div>
+      <div class="ceil">{{ total }}</div>
+      <div class="ceil">{{ hasScore }}</div>
+    </div>
+  </div>
 </template>
+
 <script>
-export default {
+import { defineComponent } from 'vue';
+
+export default defineComponent({
+  name: 'WfFeasibility',
   props: {
-    value:{
-        type: [String, Array],
-        default() {
-            return []
-        }
+    modelValue: {
+      type: [String, Array],
+      default: () => [],
+    },
+    value: {
+      type: [String, Array],
+      default: () => [],
     },
     columns: {
-        type: Array,
-        default() {
-            return []
-        }
-    }
+      type: Array,
+      default: () => [],
+    },
+  },
+  emits: ['update:modelValue', 'input'],
+  data() {
+    return {
+      localValue: [],
+    };
   },
   computed: {
+    innerValue() {
+      return this.modelValue !== undefined ? this.modelValue : this.value;
+    },
     total() {
-        if(Array.isArray(this.value)) {
-            return this.value.reduce((rec, item) => {
-                rec += parseInt(item.feaEvaluationTotalScore, 10) || 0;
-                return rec;
-            }, 0)
-        }
-        return '-'
+      if (Array.isArray(this.localValue)) {
+        return this.localValue.reduce((rec, item) => {
+          const totalScore = parseInt(item.feaEvaluationTotalScore, 10);
+          return rec + (Number.isNaN(totalScore) ? 0 : totalScore);
+        }, 0);
+      }
+      return '-';
     },
     hasScore() {
-       if(Array.isArray(this.value)) {
-            return this.value.reduce((rec, item) => {
-                rec += parseInt(item.feaEvaluationScore, 10) || 0;
-                return rec;
-            }, 0)
-        }
-        return '-'
+      if (Array.isArray(this.localValue)) {
+        return this.localValue.reduce((rec, item) => {
+          const score = parseFloat(item.feaEvaluationScore);
+          return rec + (Number.isNaN(score) ? 0 : score);
+        }, 0);
+      }
+      return '-';
     },
-    valueSet() {
-        if(Array.isArray(this.value) ){
-            return this.value
-        } else {
-            if(this.value?.length > 0){
-                const val_ =  JSON.parse(this.value);
-                this.$emit('input',  val_)
-            }
-        }
-    }
   },
- 
+  watch: {
+    innerValue: {
+      handler(val) {
+        if (Array.isArray(val)) {
+          this.localValue = val.map((item) => ({ ...item }));
+        } else if (typeof val === 'string' && val.length > 0) {
+          try {
+            const parsed = JSON.parse(val);
+            if (Array.isArray(parsed)) {
+              this.localValue = parsed.map((item) => ({ ...item }));
+              this.emitValue(parsed);
+            }
+          } catch (error) {
+            this.localValue = [];
+          }
+        } else {
+          this.localValue = [];
+        }
+      },
+      deep: true,
+      immediate: true,
+    },
+  },
   methods: {
-    handleInput(val, i) {
-        const valueNew  = this.value;
-        valueNew[i].feaEvaluationScore = Math.max(Math.min(parseFloat(valueNew[i].feaEvaluationTotalScore) , parseFloat(val)), 0);
-        this.$emit('input', valueNew);
-    }
-  }
-}
+    handleInput(val, index) {
+      if (!Array.isArray(this.localValue)) return;
+      const valueNew = [...this.localValue];
+      const target = valueNew[index];
+      if (!target) return;
+      const max = parseFloat(target.feaEvaluationTotalScore) || 0;
+      const numeric = Math.max(Math.min(max, parseFloat(val) || 0), 0);
+      target.feaEvaluationScore = numeric;
+      this.localValue.splice(index, 1, { ...target });
+      this.emitValue(this.localValue);
+    },
+    emitValue(value) {
+      this.$emit('update:modelValue', value);
+      this.$emit('input', value);
+    },
+  },
+});
 </script>
-<style lang="scss">
-.wf-feasibility {
-    border-top: 1px solid #eaeaeb;
-    .header-row .ceil {
-        font-weight: bold;
-    }
-    .header-row,
-    .content-row {
-        display: flex;
-        border-bottom: 1px solid #eaeaeb;
-        .ceil {
-            display: flex;
-            align-items: center;
-            padding: 10px;
-            justify-content: center;
-            line-height: 1.4;
-            font-size: 28rpx;
-            border-left: 1px solid #eaeaeb;
-        }
-        .ceil:nth-child(3n+1) {
-            border-right: none;
-            width: 60%;
-        }
-        .ceil:nth-child(3n+2) {
-            width: 20%;
-            border-right: 1px solid #eaeaeb;
-            border-left: 1px solid #eaeaeb;
-        }
-        .ceil:nth-child(3n+3) {
-            border-left: none;
-            border-top: none;
-            border-right: 1px solid #eaeaeb;
-            width: 20%;
-        }
-    }
 
-    .input-item {
-        text-align: center!important;
-    }
+<style lang="scss" scoped>
+.wf-feasibility {
+  border-top: 1px solid #eaeaeb;
+}
+
+.header-row .ceil {
+  font-weight: bold;
+}
+
+.header-row,
+.content-row {
+  display: flex;
+  border-bottom: 1px solid #eaeaeb;
+}
+
+.ceil {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px;
+  line-height: 1.4;
+  font-size: 28rpx;
+  border-left: 1px solid #eaeaeb;
+  min-height: 100rpx;
+  box-sizing: border-box;
+}
+
+.ceil:nth-child(3n + 1) {
+  border-right: none;
+  width: 60%;
+}
+
+.ceil:nth-child(3n + 2) {
+  width: 20%;
+  border-right: 1px solid #eaeaeb;
+  border-left: 1px solid #eaeaeb;
+}
+
+.ceil:nth-child(3n + 3) {
+  border-left: none;
+  border-top: none;
+  border-right: 1px solid #eaeaeb;
+  width: 20%;
+}
+
+.summary-row {
+  font-weight: 600;
+}
+
+.input-item {
+  width: 100%;
 }
 </style>

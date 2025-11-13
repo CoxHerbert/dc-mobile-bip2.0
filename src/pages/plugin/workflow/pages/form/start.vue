@@ -1,21 +1,8 @@
 <template>
-    <view>
-        <u-skeleton :loading="waiting" :animation="true"></u-skeleton>
-        <view class="u-skeleton" v-if="waiting">
-            <u-loading mode="flower"></u-loading>
-            <view style="display: flex; justify-content: space-between; align-items: flex-end">
-                <view class="u-skeleton-circle"></view>
-                <view class="u-skeleton-fillet" style="width: 550rpx; height: 50rpx"></view>
-            </view>
-            <view class="u-skeleton-fillet" style="height: 80rpx; margin: 50rpx 0"></view>
-            <view class="u-skeleton-fillet"></view>
-            <view class="u-skeleton-fillet"></view>
-            <view class="u-skeleton-fillet"></view>
-            <view class="u-skeleton-fillet"></view>
-            <view class="u-skeleton-fillet" style="width: 400rpx"></view>
-        </view>
-        <view class="wf-form-start" v-else>
-            <view class="split-line">
+    <div class="workflow-form-start">
+        <van-skeleton v-if="waiting" :row="6" animate />
+        <div class="wf-form-start" v-else>
+            <div class="split-line">
                 <renderer-compare-panel
                     v-if="
                         enableRendererCompare &&
@@ -27,12 +14,15 @@
                     @submit="handleSubmit"
                 >
                     <template #menu>
-                        <u-button <!-- #ifdef MP -->
-                            :custom-style="{ width: '320rpx'}"
-                            <!-- #endif -->
-                            type="success" size="medium" :loading="submitLoading" @click="handleDraft({ processDefId:
-                            process.id, formKey: process.formKey, variables: form })" > 存为草稿
-                        </u-button>
+                        <van-button
+                            type="success"
+                            size="small"
+                            :loading="submitLoading"
+                            block
+                            @click="handleDraft({ processDefId: process.id, formKey: process.formKey, variables: form })"
+                        >
+                            存为草稿
+                        </van-button>
                     </template>
                 </renderer-compare-panel>
                 <wf-form
@@ -45,47 +35,47 @@
                     @submit="handleSubmit"
                 >
                     <template #menu>
-                        <u-button <!-- #ifdef MP -->
-                            :custom-style="{ width: '320rpx'}"
-                            <!-- #endif -->
-                            type="success" size="medium" :loading="submitLoading" @click="handleDraft({ processDefId:
-                            process.id, formKey: process.formKey, variables: form })" > 存为草稿
-                        </u-button>
+                        <van-button
+                            type="success"
+                            size="small"
+                            :loading="submitLoading"
+                            block
+                            @click="handleDraft({ processDefId: process.id, formKey: process.formKey, variables: form })"
+                        >
+                            存为草稿
+                        </van-button>
                     </template>
                 </wf-form>
-            </view>
-            <view class="split-line">
+            </div>
+            <div class="split-line">
                 <wkf-exam-form
                     v-if="showExamForm"
                     ref="examineForm"
                     :process="process"
                     @user-select="handleUserSelect"
                 ></wkf-exam-form>
-            </view>
+            </div>
 
-            <!-- 选人 -->
             <wkf-user-select
                 ref="user-select"
                 :check-type="checkType"
                 :default-checked="defaultChecked"
                 @onConfirm="handleUserSelectConfirm"
             ></wkf-user-select>
-        </view>
-        <!-- 保存至草稿箱 -->
-        <u-modal
-            v-model="saveDraftShow"
-            content="保存至草稿箱并关闭？"
+        </div>
+        <van-dialog
+            v-model:show="saveDraftShow"
             show-cancel-button
+            message="保存至草稿箱并关闭？"
             @confirm="handleDraftSubmit"
-        ></u-modal>
-        <!-- 恢复草稿箱 -->
-        <u-modal
-            v-model="recoverDraftShow"
-            content="是否恢复之前保存的草稿？"
+        />
+        <van-dialog
+            v-model:show="recoverDraftShow"
             show-cancel-button
+            message="是否恢复之前保存的草稿？"
             @confirm="handleRevocerDraftSubmit"
-        ></u-modal>
-    </view>
+        />
+    </div>
 </template>
 
 <script>
@@ -205,20 +195,8 @@ page {
     min-height: 45px;
 }
 
-.u-skeleton {
-    height: 100vh;
-    padding: 30rpx;
-
-    .u-skeleton-circle {
-        height: 90rpx;
-        width: 90rpx;
-        margin-bottom: 30rpx;
-    }
-
-    .u-skeleton-fillet {
-        height: 100rpx;
-        width: 100%;
-        margin-bottom: 30rpx;
-    }
+.workflow-form-start {
+    min-height: 100vh;
+    background: #f6f6f6;
 }
 </style>

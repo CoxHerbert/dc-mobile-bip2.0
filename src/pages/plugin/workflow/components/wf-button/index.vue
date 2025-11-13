@@ -1,288 +1,247 @@
 <template>
-	<view>
-		<view class="wf-button safe-area-inset-bottom" v-if="process.status == 'todo'">
-			<view class="wf-button-left">
-				<u-button
-					v-if="getButton('wf_pass')"
-					size="medium"
-					:disabled="loading"
-					hover-class="none"
-					type="primary"
-					@click="$emit('examine', true)"
-				>
-					<span v-if="['recall', 'reject'].includes(process.processIsFinished)">重新提交</span>
-					<span v-else>{{ getButton('wf_pass').name }}</span>
-				</u-button>
-				<u-button
-					v-if="getButton('wf_reject')"
-					size="medium"
-					:disabled="loading"
-					hover-class="none"
-					type="error"
-					@click="$emit('examine', false)"
-				>
-					<span v-if="nodeList.length > 1">{{ getButton('wf_reject').name }}</span>
-					<span v-else>取消申请</span>
-				</u-button>
-			</view>
-			<view class="wf-button-right" v-if="buttonList.length > 2">
-				<wf-popover
-					:show="moreBtnShow"
-					position="absolute"
-					direction="bottom"
-					width="200rpx"
-					right="30rpx"
-					top="-20rpx"
-					translateY="-100%"
-					triangleRight="100rpx"
-					triangleBottom="-22rpx"
-					backgroundColor="#eee"
-					@close="moreBtnShow = false"
-				>
-					<view class="menu-item" @click.native="handleOperate('draft')">
-						暂存
-					</view>
-					<view v-if="getButton('wf_transfer')" class="menu-item" @click.native="handleOperate('transfer')">
-						{{ getButton('wf_transfer').name }}
-					</view>
-					<view v-if="getButton('wf_delegate')" class="menu-item" @click.native="handleOperate('delegate')">
-						{{ getButton('wf_delegate').name }}
-					</view>
-					<view v-if="getButton('wf_rollback')" class="menu-item" @click.native="handleRollback">
-						{{ getButton('wf_rollback').name }}
-					</view>
-					<view v-if="getButton('wf_terminate')" class="menu-item" @click.native="modalShow = true">
-						{{ getButton('wf_terminate').name }}
-					</view>
-					<view
-						v-if="process.isMultiInstance && getButton('wf_add_instance')"
-						class="menu-item"
-						@click.native="handleOperate('addInstance')"
-					>
-						{{ getButton('wf_add_instance').name }}
-					</view>
-				</wf-popover>
-				<u-button
-					size="medium"
-					:disabled="loading"
-					:hair-line="false"
-					hover-class="none"
-					type="info"
-					@click="moreBtnShow = !moreBtnShow"
-				>
-					更多操作
-				</u-button>
-			</view>
-		</view>
-		<view class="wf-button safe-area-inset-bottom" v-if="process.status == 'done' && process.isOwner && process.isReturnable">
-			<view class="wf-button-center">
-				<u-button
-					v-if="process.isOwner && process.isReturnable"
-					size="medium"
-					:disabled="loading"
-					hover-class="none"
-					type="warning"
-					@click="handleWithdraw('start')"
-				>
-					撤回
-				</u-button>
-				<u-button
-					v-if="process.isOwner && process.isReturnable"
-					size="medium"
-					:disabled="loading"
-					hover-class="none"
-					type="error"
-					@click="handleWithdraw('end')"
-				>
-					撤销
-				</u-button>
-			</view>
-		</view>
-		<!-- 占位符 -->
-		<view style="height: 110rpx"></view>
-		<u-action-sheet
-			:list="nodeList"
-			:tips="{ text: '选择要退回到的节点' }"
-			@click="handleNodeClick"
-			v-model="show"
-			safe-area-inset-bottom
-		></u-action-sheet>
-		<u-modal
-			v-model="modalShow"
-			show-cancel-button
-			title="警告"
-			content="确定要终止此流程吗？"
-			@confirm="handleTerminate"
-		></u-modal>
-		<u-modal
-			v-model="withdrawModalShow"
-			show-cancel-button
-			title="警告"
-			:content="withdrawContent"
-			@confirm="$emit('withdraw', withdrawType)"
-		></u-modal>
-	</view>
+  <div>
+    <div class="wf-button safe-area-inset-bottom" v-if="process.status === 'todo'">
+      <div class="wf-button-left">
+        <van-button
+          v-if="getButton('wf_pass')"
+          size="small"
+          :loading="loading"
+          type="primary"
+          @click="$emit('examine', true)"
+        >
+          <span v-if="['recall', 'reject'].includes(process.processIsFinished)">重新提交</span>
+          <span v-else>{{ getButton('wf_pass').name }}</span>
+        </van-button>
+        <van-button
+          v-if="getButton('wf_reject')"
+          size="small"
+          :loading="loading"
+          type="danger"
+          @click="$emit('examine', false)"
+        >
+          <span v-if="nodeList.length > 1">{{ getButton('wf_reject').name }}</span>
+          <span v-else>取消申请</span>
+        </van-button>
+      </div>
+      <div class="wf-button-right" v-if="buttonList.length > 2">
+        <wf-popover
+          :show="moreBtnShow"
+          position="absolute"
+          direction="bottom"
+          width="200rpx"
+          right="30rpx"
+          top="-20rpx"
+          translateY="-100%"
+          triangleRight="100rpx"
+          triangleBottom="-22rpx"
+          backgroundColor="#eee"
+          @close="moreBtnShow = false"
+        >
+          <div class="menu-item" @click="handleOperate('draft')">暂存</div>
+          <div v-if="getButton('wf_transfer')" class="menu-item" @click="handleOperate('transfer')">
+            {{ getButton('wf_transfer').name }}
+          </div>
+          <div v-if="getButton('wf_delegate')" class="menu-item" @click="handleOperate('delegate')">
+            {{ getButton('wf_delegate').name }}
+          </div>
+          <div v-if="getButton('wf_rollback')" class="menu-item" @click="handleRollback">
+            {{ getButton('wf_rollback').name }}
+          </div>
+          <div v-if="getButton('wf_terminate')" class="menu-item" @click="modalShow = true">
+            {{ getButton('wf_terminate').name }}
+          </div>
+          <div
+            v-if="process.isMultiInstance && getButton('wf_add_instance')"
+            class="menu-item"
+            @click="handleOperate('addInstance')"
+          >
+            {{ getButton('wf_add_instance').name }}
+          </div>
+        </wf-popover>
+        <van-button size="small" :loading="loading" type="default" @click="moreBtnShow = !moreBtnShow">
+          更多操作
+        </van-button>
+      </div>
+    </div>
+    <div
+      class="wf-button safe-area-inset-bottom"
+      v-if="process.status === 'done' && process.isOwner && process.isReturnable"
+    >
+      <div class="wf-button-center">
+        <van-button
+          v-if="process.isOwner && process.isReturnable"
+          size="small"
+          :loading="loading"
+          type="warning"
+          @click="handleWithdraw('start')"
+        >
+          撤回
+        </van-button>
+        <van-button
+          v-if="process.isOwner && process.isReturnable"
+          size="small"
+          :loading="loading"
+          type="danger"
+          @click="handleWithdraw('end')"
+        >
+          撤销
+        </van-button>
+      </div>
+    </div>
+    <div style="height: 110rpx"></div>
+    <van-action-sheet
+      v-model:show="actionSheetVisible"
+      :actions="nodeList"
+      cancel-text="取消"
+      description="选择要退回到的节点"
+      @select="handleNodeSelect"
+      close-on-click-action
+    />
+    <van-dialog
+      v-model:show="modalShow"
+      show-cancel-button
+      title="警告"
+      message="确定要终止此流程吗？"
+      @confirm="handleTerminate"
+    />
+    <van-dialog
+      v-model:show="withdrawModalShow"
+      show-cancel-button
+      title="警告"
+      :message="withdrawContent"
+      @confirm="$emit('withdraw', withdrawType)"
+    />
+  </div>
 </template>
+
 <script>
-import { getBackNodes } from '../../api/task.js'
+import { defineComponent } from 'vue';
+import { Toast } from 'vant';
+import { getBackNodes } from '../../api/task.js';
 
-export default {
-	props: {
-		loading: {
-			type: Boolean,
-			default: false
-		},
-		buttonList: {
-			type: Array,
-			default: () => {
-				return []
-			}
-		},
-		process: {
-			type: Object,
-			default: () => {
-				return {}
-			}
-		},
-		comment: String
-	},
-	watch: {
-		'process.taskId': {
-			handler(val) {
-				if (val) {
-					getBackNodes({ taskId: val }).then(res => {
-						this.nodeList = res.data.map(d => {
-							return { text: d.nodeName, nodeId: d.nodeId }
-						})
-					})
-				}
-			},
-			immediate: true
-		}
-	},
-	data() {
-		return {
-			moreBtnShow: false,
-			show: false,
-			nodeList: [],
-			modalShow: false,
-			withdrawModalShow: false,
-			withdrawContent: '',
-			withdrawType: ''
-		}
-	},
-	methods: {
-		handleRollback() {
-			if (!this.comment) {
-				uni.showToast({
-					title: '请填写批复意见',
-					icon: 'none'
-				})
-				return
-			}
-			this.moreBtnShow = false
-			const { taskId } = this.process
-			if (this.nodeList.length == 0)
-				uni.showToast({
-					title: '查询不到可退回的节点',
-					icon: 'none'
-				})
-			else this.show = true
-		},
-		handleNodeClick(index) {
-			this.moreBtnShow = false
-			const { nodeId } = this.nodeList[index]
-			this.$emit('rollback', nodeId)
-		},
-		handleOperate(type) {
-			this.moreBtnShow = false
-			switch (type) {
-				case 'transfer':
-					this.$emit('user-select', { type: 'transfer', checkType: 'radio' })
-					break
-				case 'delegate':
-					this.$emit('user-select', { type: 'delegate', checkType: 'radio' })
-					break
-				case 'addInstance':
-					this.$emit('user-select', { type: 'addInstance', checkType: 'checkbox' })
-					break
-				case 'draft':
-					this.$emit('draft')
-					break
-			}
-		},
-		handleTerminate() {
-			if (!this.comment) {
-				uni.showToast({
-					title: '请填写批复意见',
-					icon: 'none'
-				})
-				return
-			}
-			this.moreBtnShow = false
-			this.$emit('terminate')
-		},
-		handleWithdraw(type) {
-			if ('start' === type) this.withdrawContent = '确定要撤回重新提交吗？若当前流程无发起人节点，效果同撤销。'
-			else this.withdrawContent = '确定要撤销此流程吗？'
-			this.withdrawType = `wf_withdraw_${type}`
-			this.withdrawModalShow = true
-		},
-		getButton(key) {
-			return this.buttonList.find(b => b.buttonKey == key)
-		}
-	}
-}
+export default defineComponent({
+  props: {
+    loading: {
+      type: Boolean,
+      default: false,
+    },
+    buttonList: {
+      type: Array,
+      default: () => [],
+    },
+    process: {
+      type: Object,
+      default: () => ({}),
+    },
+    comment: String,
+  },
+  data() {
+    return {
+      moreBtnShow: false,
+      actionSheetVisible: false,
+      nodeList: [],
+      modalShow: false,
+      withdrawModalShow: false,
+      withdrawContent: '',
+      withdrawType: '',
+    };
+  },
+  watch: {
+    'process.taskId': {
+      handler(val) {
+        if (val) {
+          getBackNodes({ taskId: val }).then((res) => {
+            this.nodeList = (res.data || []).map((d) => ({ name: d.nodeName, nodeId: d.nodeId }));
+          });
+        }
+      },
+      immediate: true,
+    },
+  },
+  methods: {
+    getButton(type) {
+      return this.buttonList.find((btn) => btn.code === type);
+    },
+    handleRollback() {
+      if (!this.comment) {
+        Toast({ message: '请填写批复意见', type: 'fail' });
+        return;
+      }
+      this.moreBtnShow = false;
+      if (this.nodeList.length === 0) {
+        Toast({ message: '查询不到可退回的节点', type: 'fail' });
+      } else {
+        this.actionSheetVisible = true;
+      }
+    },
+    handleNodeSelect(action) {
+      this.moreBtnShow = false;
+      if (action && action.nodeId) {
+        this.$emit('rollback', action.nodeId);
+      }
+    },
+    handleOperate(type) {
+      this.moreBtnShow = false;
+      switch (type) {
+        case 'transfer':
+          this.$emit('transfer');
+          break;
+        case 'delegate':
+          this.$emit('delegate');
+          break;
+        case 'addInstance':
+          this.$emit('add-instance');
+          break;
+        case 'draft':
+          this.$emit('draft');
+          break;
+        default:
+          break;
+      }
+    },
+    handleTerminate() {
+      this.$emit('terminate');
+    },
+    handleWithdraw(type) {
+      this.withdrawType = type;
+      this.withdrawContent = type === 'start' ? '确定要撤回此流程吗？' : '确定要撤销此流程吗？';
+      this.withdrawModalShow = true;
+    },
+  },
+});
 </script>
+
 <style lang="scss" scoped>
-@import '../../static/styles/common';
 .wf-button {
-	width: 100%;
-	/* #ifdef H5 */
-	height: 100rpx;
-	/* #endif */
-	position: fixed;
-	left: 0;
-	right: 0;
-	bottom: 0;
-	z-index: 9999;
-	border-top: 2rpx solid #f0f2f5;
-	background: #fff;
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	/* #ifdef MP */
-	padding-top: 10rpx;
-	/* #endif */
-	.wf-button-center {
-		width: 100%;
-		display: flex;
-		align-items: center;
-		justify-content: space-evenly;
-	}
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 9;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20rpx 30rpx;
+  background: #fff;
+  box-shadow: 0 -6rpx 20rpx rgba(0, 0, 0, 0.08);
+  box-sizing: border-box;
+}
 
-	.wf-button-left {
-		width: 100%;
-		display: flex;
-		justify-content: space-around;
-		.u-btn {
-			max-width: 220rpx;
-			overflow: hidden !important;
-		}
-	}
-	.wf-button-right {
-		padding: 0 10rpx 0 0;
+.wf-button-left,
+.wf-button-right,
+.wf-button-center {
+  display: flex;
+  gap: 20rpx;
+  align-items: center;
+}
 
-		.menu-item {
-			width: 100%;
-			line-height: 80rpx;
-			font-size: 28rpx;
-			color: #323232;
-			text-align: center;
-		}
-		.menu-item + .menu-item {
-			border-top: 2rpx solid #f6f6f6;
-		}
-	}
+.menu-item {
+  padding: 20rpx;
+  font-size: 26rpx;
+  color: #222;
+}
+
+.menu-item + .menu-item {
+  border-top: 1px solid #eee;
 }
 </style>
