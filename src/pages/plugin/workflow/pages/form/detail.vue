@@ -128,6 +128,8 @@
     </view>
 </template>
 <script>
+import { defineComponent } from 'vue';
+import { Base64 } from '@/utils/base64.js';
 import WkfFlow from '../../components/wf-flow/index';
 import WfBpmn from '../../components/wf-bpmn/index.vue';
 import WkfUserSelect from '../../components/wf-user-select/index';
@@ -135,9 +137,9 @@ import WkfButton from '../../components/wf-button/index';
 import WkfExamForm from '../../components/wf-exam-form/index';
 import exForm from '../../mixins/ex-form';
 import draft from '../../mixins/draft';
-// import { needHideTitleBar } from '@/utils/utils';
-export default {
-    name: 'wf-form-detail',
+
+export default defineComponent({
+    name: 'WorkflowFormDetailPage',
     mixins: [exForm, draft],
     components: { WkfFlow, WkfUserSelect, WkfButton, WkfExamForm, WfBpmn },
     data() {
@@ -145,31 +147,37 @@ export default {
             process: null,
             form: {},
             option: {},
-            vars: [], // 需要提交的字段
-            submitLoading: false, // 提交时按钮loading
+            vars: [],
+            submitLoading: false,
             current: 0,
             tabList: [{ name: '申请信息' }, { name: '流转信息' }, { name: '流转图' }],
-            summaryOption: {}, // 汇总表单option
+            summaryOption: {},
             tempVariables: {},
             h5bpmn: {},
         };
     },
-    onLoad(option) {
-        // const hideTitlebar  = needHideTitleBar();
-        // if(hideTitlebar) {
-        //     uni.setNavigationBarStyle({
-        //         navigationStyle: 'custom', // 隐藏默认导航栏
-        //     });
-        // }
-
-        const { p } = option;
-        if (p) {
-            const param = JSON.parse(Buffer.from(p, 'base64').toString());
-            const { taskId, processInsId } = param;
-            if (taskId && processInsId) this.getDetail(taskId, processInsId);
-        }
+    created() {
+        this.resolveRouteParams(this.$route.query);
+    },
+    watch: {
+        '$route.query.p'(value) {
+            this.resolveRouteParams({ p: value });
+        },
     },
     methods: {
+        resolveRouteParams(query = {}) {
+            const { p } = query;
+            if (!p) return;
+            try {
+                const param = JSON.parse(Base64.decode(p));
+                const { taskId, processInsId } = param;
+                if (taskId && processInsId) {
+                    this.getDetail(taskId, processInsId);
+                }
+            } catch (error) {
+                console.error('[workflow] 无法解析流程明细参数', error);
+            }
+        },
         // 获取任务详情
         getDetail(taskId, processInsId) {
             this.h5bpmn = {
@@ -341,12 +349,14 @@ export default {
                                 uni.showToast({
                                     title: '处理成功',
                                 });
-                                setTimeout(() => {
-                                    uni.redirectTo({
-                                        url: '/pages/plugin/workflow/pages/mine/index?current=0',
-                                    });
-                                    done();
-                                }, 1000);
+                                  setTimeout(() => {
+                                      this.handleNavigateTo({
+                                          name: 'WorkflowMine',
+                                          query: { current: '0' },
+                                          replace: true,
+                                      });
+                                      done();
+                                  }, 1000);
                             })
                             .catch(() => {
                                 if (typeof done == 'function') done();
@@ -363,11 +373,9 @@ export default {
                         uni.showToast({
                             title: '处理成功',
                         });
-                        setTimeout(() => {
-                            uni.redirectTo({
-                                url: '/pages/plugin/workflow/pages/mine/index?current=0',
-                            });
-                        }, 1000);
+                          setTimeout(() => {
+                              this.handleNavigateTo({ name: 'WorkflowMine', query: { current: '0' }, replace: true });
+                          }, 1000);
                     })
                     .catch(() => {
                         this.submitLoading = false;
@@ -379,7 +387,7 @@ export default {
                 });
         },
     },
-};
+});
 </script>
 <style lang="scss" scoped>
 @import '../../static/styles/common';

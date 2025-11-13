@@ -39,6 +39,6 @@ mountLegacyProperties(legacy, {
     $wwsdk: wwsdk,
 });
 
-initUniCompat(legacy);
+initUniCompat(legacy, router);
 
 app.mount('#app');
