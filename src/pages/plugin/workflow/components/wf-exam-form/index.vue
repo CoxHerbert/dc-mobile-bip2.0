@@ -1,48 +1,60 @@
 <template>
-    <view class="wf-exam-form">
-        <u-form class="wf-form" :model="examineForm">
-            <u-form-item label="批复意见：" label-width="150" label-position="top" v-if="!hideComment">
-                <u-input
+    <div class="wf-exam-form">
+        <van-form class="wf-form">
+            <van-cell-group inset>
+                <van-field
+                    v-if="!hideComment"
+                    class="wf-form-field"
+                    label="批复意见："
+                    label-width="150"
                     type="textarea"
+                    autosize
                     v-model="examineForm.comment"
-                    height="70rpx"
                     placeholder="批复意见"
-                    @input="$emit('update:comment', examineForm.comment)"
+                    @update:model-value="handleCommentInput"
                 />
-            </u-form-item>
-            <u-form-item label="附件：" label-width="150" label-position="top" v-if="!hideAttchment">
-                <wf-upload
-                    v-model="fileList"
-                    :column="{
-                        action: '/api/blade-resource/oss/endpoint/put-file',
-                        propsHttp: {
-                            res: 'data',
-                            url: 'link',
-                            name: 'originalName',
-                        },
-                    }"
-                    :disabled="false"
-                ></wf-upload>
-            </u-form-item>
-            <u-form-item label="抄送人：" label-width="150" label-position="top" v-if="!hideCopy">
-                <u-input
-                    disabled
+                <van-field v-if="!hideAttchment" class="wf-form-field" label="附件：" label-width="150">
+                    <template #input>
+                        <wf-upload
+                            v-model="fileList"
+                            :column="{
+                                action: '/api/blade-resource/oss/endpoint/put-file',
+                                propsHttp: {
+                                    res: 'data',
+                                    url: 'link',
+                                    name: 'originalName',
+                                },
+                            }"
+                            :disabled="false"
+                        ></wf-upload>
+                    </template>
+                </van-field>
+                <van-field
+                    v-if="!hideCopy"
+                    class="wf-form-field"
+                    label="抄送人："
+                    label-width="150"
                     v-model="examineForm.$copyUser"
                     placeholder="请选择 抄送人"
+                    readonly
+                    clickable
                     @click="$emit('user-select', { type: 'copy', checkType: 'checkbox' })"
                 />
-            </u-form-item>
-            <u-form-item label="指定审批人：" label-width="150" label-position="top" v-if="!hideExamine">
-                <u-input
-                    disabled
+                <van-field
+                    v-if="!hideExamine"
+                    class="wf-form-field"
+                    label="指定审批人："
+                    label-width="150"
                     v-model="examineForm.$assignee"
                     placeholder="如不选择则使用默认处理人，驳回时无效。多选时若下一节点为多实例则按选择顺序赋值，若不是择只有第一个生效。"
+                    readonly
+                    clickable
                     @click="$emit('user-select', { type: 'assignee', checkType: 'checkbox' })"
                 />
-            </u-form-item>
-        </u-form>
-        <view style="height: 150rpx; background-color: #f6f6f6; margin: 0 -30rpx"></view>
-    </view>
+            </van-cell-group>
+        </van-form>
+        <div style="height: 150rpx; background-color: #f6f6f6; margin: 0 -30rpx"></div>
+    </div>
 </template>
 
 <script>
@@ -99,8 +111,14 @@ export default {
             fileList: [],
         };
     },
+    methods: {
+        handleCommentInput() {
+            this.$emit('update:comment', this.examineForm.comment);
+        },
+    },
 };
 </script>
+
 <style lang="scss" scoped>
 .wf-exam-form {
     padding: 0 30rpx;
