@@ -1,0 +1,5 @@
+node_modules
+/dist
+/docs
+/src/uni_modules
+/src/uview-ui
