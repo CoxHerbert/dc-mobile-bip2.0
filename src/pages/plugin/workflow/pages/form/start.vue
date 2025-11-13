@@ -16,8 +16,27 @@
         </view>
         <view class="wf-form-start" v-else>
             <view class="split-line">
-                <wf-form
+                <renderer-compare-panel
                     v-if="
+                        enableRendererCompare &&
+                        option &&
+                        ((option.column && option.column.length > 0) || (option.group && option.group.length > 0))
+                    "
+                    v-model="form"
+                    :option="option"
+                    @submit="handleSubmit"
+                >
+                    <template #menu>
+                        <u-button <!-- #ifdef MP -->
+                            :custom-style="{ width: '320rpx'}"
+                            <!-- #endif -->
+                            type="success" size="medium" :loading="submitLoading" @click="handleDraft({ processDefId:
+                            process.id, formKey: process.formKey, variables: form })" > 存为草稿
+                        </u-button>
+                    </template>
+                </renderer-compare-panel>
+                <wf-form
+                    v-else-if="
                         option &&
                         ((option.column && option.column.length > 0) || (option.group && option.group.length > 0))
                     "
@@ -72,6 +91,8 @@
 <script>
 import { defineComponent } from 'vue';
 import { Base64 } from '@/utils/base64.js';
+import RendererComparePanel from '@/components/dc/renderer/RendererComparePanel.vue';
+import { isRendererTestEnvironment } from '@/utils/env';
 import wkfUserSelect from '../../components/wf-user-select/index';
 import wkfExamForm from '../../components/wf-exam-form/index';
 import exForm from '../../mixins/ex-form';
@@ -80,11 +101,14 @@ import draft from '../../mixins/draft';
 export default defineComponent({
     name: 'WorkflowFormStartPage',
     mixins: [exForm, draft],
-    components: { wkfExamForm, wkfUserSelect },
+    components: { wkfExamForm, wkfUserSelect, RendererComparePanel },
     computed: {
         showExamForm() {
             const { hideComment, hideCopy, hideExamine } = this.process;
             return !hideComment || !hideCopy || !hideExamine;
+        },
+        enableRendererCompare() {
+            return isRendererTestEnvironment();
         },
     },
     data() {

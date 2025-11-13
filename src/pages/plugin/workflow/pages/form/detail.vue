@@ -64,7 +64,17 @@
                                     (summaryOption.group && summaryOption.group.length > 0))
                             "
                         >
-                            <wf-form v-model="form" ref="summaryForm" :option="summaryOption"></wf-form>
+                            <renderer-compare-panel
+                                v-if="enableRendererCompare"
+                                v-model="form"
+                                :option="summaryOption"
+                            ></renderer-compare-panel>
+                            <wf-form
+                                v-else
+                                v-model="form"
+                                ref="summaryForm"
+                                :option="summaryOption"
+                            ></wf-form>
                         </view>
                         <view
                             class="split-line"
@@ -74,7 +84,17 @@
                                     (option.group && option.group.length > 0))
                             "
                         >
-                            <wf-form ref="form" v-model="form" :option="option"></wf-form>
+                            <renderer-compare-panel
+                                v-if="enableRendererCompare"
+                                v-model="form"
+                                :option="option"
+                            ></renderer-compare-panel>
+                            <wf-form
+                                v-else
+                                ref="form"
+                                v-model="form"
+                                :option="option"
+                            ></wf-form>
                         </view>
                         <view class="split-line" v-if="process.status == 'todo'">
                             <wkf-exam-form
@@ -130,6 +150,8 @@
 <script>
 import { defineComponent } from 'vue';
 import { Base64 } from '@/utils/base64.js';
+import RendererComparePanel from '@/components/dc/renderer/RendererComparePanel.vue';
+import { isRendererTestEnvironment } from '@/utils/env';
 import WkfFlow from '../../components/wf-flow/index';
 import WfBpmn from '../../components/wf-bpmn/index.vue';
 import WkfUserSelect from '../../components/wf-user-select/index';
@@ -141,7 +163,7 @@ import draft from '../../mixins/draft';
 export default defineComponent({
     name: 'WorkflowFormDetailPage',
     mixins: [exForm, draft],
-    components: { WkfFlow, WkfUserSelect, WkfButton, WkfExamForm, WfBpmn },
+    components: { WkfFlow, WkfUserSelect, WkfButton, WkfExamForm, WfBpmn, RendererComparePanel },
     data() {
         return {
             process: null,
@@ -155,6 +177,11 @@ export default defineComponent({
             tempVariables: {},
             h5bpmn: {},
         };
+    },
+    computed: {
+        enableRendererCompare() {
+            return isRendererTestEnvironment();
+        },
     },
     created() {
         this.resolveRouteParams(this.$route.query);
