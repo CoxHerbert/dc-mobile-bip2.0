@@ -49,13 +49,12 @@
             <view class="content">
                 <u-card
                     v-show="current == 0"
-                    :show-head="false"
                     margin="20rpx 0"
                     padding="0"
                     :border="false"
                     :body-style="{ backgroundColor: '#f6f6f6' }"
                 >
-                    <view slot="body">
+                    <template #default>
                         <view
                             class="split-line"
                             v-if="
@@ -104,7 +103,7 @@
                                 @user-select="handleUserSelect"
                             ></wkf-exam-form>
                         </view>
-                    </view>
+                    </template>
                 </u-card>
                 <view class="" style="padding: 30rpx" v-show="current == 1"><wkf-flow :flow="flow"></wkf-flow></view>
                 <!-- <WfBpmn v-if="current == 2" :bpmnOption="bpmnOption"></WfBpmn> -->

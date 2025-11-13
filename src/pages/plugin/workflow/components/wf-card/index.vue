@@ -4,11 +4,10 @@
             v-for="(item, index) in list"
             :key="index"
             :border="false"
-            :show-head="false"
-            :head-border-bottom="false"
             margin="0 30rpx 30rpx"
         >
-            <view slot="body" @click="dynamicRoute(item, 'detail')">
+            <template #default>
+                <view @click="dynamicRoute(item, 'detail')">
                 <view class="head flex-between flex-c">
                     <view class="flex-one flex-between flex-c">
                         <view class="status-icon">
@@ -83,14 +82,15 @@
                 </block>
 
                 <u-line class="u-line" direction="col"></u-line>
-            </view>
-            <view v-if="showBtn" slot="foot">
+                </view>
+            </template>
+            <template v-if="showBtn" #foot>
                 <view class="foot">
                     <view class="reject t-a-c" @click.stop="handleExam(item, false)">拒绝</view>
                     <view class="line">|</view>
                     <view class="pass t-a-c" @click.stop="handleExam(item, true)">同意</view>
                 </view>
-            </view>
+            </template>
         </u-card>
 
         <u-modal v-model="show" ref="modal" title="审批意见" show-cancel-button async-close @confirm="handleSubmit">

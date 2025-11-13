@@ -22,34 +22,33 @@
 		<u-tabs :list="tabList" :is-scroll="false" :current="current" @change="current = $event"></u-tabs>
 		<!-- 内容 -->
 		<view class="content">
-			<u-card
-				v-show="current == 0"
-				:show-head="false"
-				margin="20rpx 0"
-				padding="0"
-				:border="false"
-				:body-style="{ backgroundColor: '#f6f6f6' }"
-			>
-				<view slot="body">
-					<view class="split-line">
-						<wf-form
-							v-if="init"
+                        <u-card
+                                v-show="current == 0"
+                                margin="20rpx 0"
+                                padding="0"
+                                :border="false"
+                                :body-style="{ backgroundColor: '#f6f6f6' }"
+                        >
+                                <template #default>
+                                        <view class="split-line">
+                                                <wf-form
+                                                        v-if="init"
 							ref="form"
 							v-model="form"
 							:option="option"
 							@submit="handleSubmit"
 						></wf-form>
 					</view>
-					<view class="split-line" v-if="process.status == 'todo'">
-						<wkf-exam-form
-							ref="examineForm"
-							:process="process"
-							:comment.sync="comment"
-							@user-select="handleUserSelect"
-						></wkf-exam-form>
-					</view>
-				</view>
-			</u-card>
+                                        <view class="split-line" v-if="process.status == 'todo'">
+                                                <wkf-exam-form
+                                                        ref="examineForm"
+                                                        :process="process"
+                                                        :comment.sync="comment"
+                                                        @user-select="handleUserSelect"
+                                                ></wkf-exam-form>
+                                        </view>
+                                </template>
+                        </u-card>
 			<!-- <u-card v-if="current == 1" :show-head="false" margin="20rpx 0"> -->
 			<view class="" style="padding: 30rpx" v-show="current == 1"><wkf-flow :flow="flow"></wkf-flow></view>
 			<!-- </u-card> -->
