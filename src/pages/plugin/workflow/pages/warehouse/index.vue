@@ -1,17 +1,13 @@
 <template>
-    <view class="home-container">
-        仓库
-        <view class="scan-container">
-            <!-- 输入框，扫码结果填充到这里 -->
-            <u-input v-model="qrCodeResult" placeholder="请扫描二维码" />
-            <!-- 扫码按钮 -->
-            <u-button class="scan-button" @click="handleScan">扫码</u-button>
-            <!-- 纯净扫码区域 -->
-            <view v-if="isReaderVisible" class="scanner-wrapper">
-                <div id="reader"></div>
-            </view>
-        </view>
-    </view>
+    <div class="home-container">
+        <div class="scan-container">
+            <van-field v-model="qrCodeResult" label="扫码结果" placeholder="请扫描二维码" clearable />
+            <van-button class="scan-button" type="primary" @click="handleScan">扫码</van-button>
+        </div>
+        <div v-if="isReaderVisible" class="scanner-wrapper">
+            <div id="reader"></div>
+        </div>
+    </div>
 </template>
 <script>
 import { defineComponent } from 'vue';
@@ -84,14 +80,13 @@ export default defineComponent({
 <style scoped>
 .scan-container {
     display: flex;
-    align-items: center;
+    align-items: flex-end;
+    gap: 12px;
+    margin-bottom: 20px;
 }
 
 .scan-button {
-    background-color: #007bff;
-    color: white;
-    padding: 8px 12px;
-    border-radius: 5px;
+    flex-shrink: 0;
 }
 
 .scanner-wrapper {

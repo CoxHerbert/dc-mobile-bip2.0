@@ -1,39 +1,45 @@
 <template>
-    <view class="container">
-        <view class="head-item">
-            <view class="search-item">
-                <u-search
-                    placeholder="请输入流程名称"
+    <div class="container">
+        <div class="head-item">
+            <div class="search-item">
+                <van-search
+                    class="workflow-search"
                     v-model="searchValue"
+                    placeholder="请输入流程名称"
                     shape="square"
-                    bg-color="#8EAAFF"
-                    placeholder-color="#5470C4"
-                    color="#fff"
-                    search-icon-color="#ffffffE5"
-                    :clearabled="true"
                     :show-action="false"
-                    @search="getList(true)"
-                    @clear="getList(true)"
-                ></u-search>
-            </view>
+                    background="#8EAAFF"
+                    @search="handleSearch"
+                    @clear="handleSearch"
+                />
+            </div>
 
-            <u-tabs
-                :list="tabList"
-                :current="current"
-                bg-color="transparent"
-                active-color="#fff"
-                inactive-color="#C7D5FF"
-                @change="handleTabClick"
-            ></u-tabs>
-        </view>
+            <van-tabs
+                v-model:active="current"
+                :border="false"
+                class="mine-tabs"
+                background="transparent"
+                @change="handleTabChange"
+            >
+                <van-tab v-for="(tab, index) in tabList" :key="tab.name" :name="index">
+                    <template #title>
+                        <span class="tab-title">{{ formatTabTitle(tab, index) }}</span>
+                    </template>
+                </van-tab>
+            </van-tabs>
+        </div>
 
-        <view class="main" v-if="list.length > 0">
+        <div class="main" v-if="list.length > 0">
             <wkf-card :list="list" :show-btn="showBtn" :type="current" @refresh="getList(true)"></wkf-card>
-            <u-loadmore :status="loadStatus" @loadmore="getList()" />
-        </view>
+            <div class="loadmore">
+                <van-loading v-if="loadStatus === 'loading'" size="24px">加载中...</van-loading>
+                <div v-else-if="loadStatus === 'nomore'" class="loadmore-text">没有更多了</div>
+                <van-button v-else type="primary" size="small" plain @click="getList()">加载更多</van-button>
+            </div>
+        </div>
         <wf-empty v-else text="工作再忙，也要记得喝水"></wf-empty>
-        <u-back-top :scroll-top="scrollTop"></u-back-top>
-    </view>
+        <van-back-top target="body" :right="24" :bottom="120" v-if="scrollTop > 200" />
+    </div>
 </template>
 <script>
 import { defineComponent } from 'vue';
@@ -97,6 +103,19 @@ export default defineComponent({
                     this.current = index;
                 }
             }
+        },
+        formatTabTitle(tab, index) {
+            if (index === 0 && tab.count) {
+                return `${tab.name}(${tab.count})`;
+            }
+            return tab.name;
+        },
+        handleSearch() {
+            this.getList(true);
+        },
+        handleTabChange({ name }) {
+            const index = Number(name);
+            this.handleTabClick(Number.isNaN(index) ? 0 : index);
         },
         async getList(clear = false) {
             if (this.loading) return;
@@ -187,6 +206,53 @@ page {
 }
 .main {
     padding: 30rpx 0;
+}
+.mine-tabs {
+    color: #c7d5ff;
+
+    .van-tabs__nav {
+        background: transparent;
+    }
+    .van-tab {
+        color: #c7d5ff;
+    }
+    .van-tab--active {
+        color: #fff;
+    }
+    .van-tabs__line {
+        background-color: #fff;
+    }
+}
+
+.tab-title {
+    font-size: 28rpx;
+}
+
+.loadmore {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px 0;
+    gap: 12px;
+}
+
+.loadmore-text {
+    color: #999;
+    font-size: 26rpx;
+}
+
+.workflow-search {
+    --van-search-left-icon-color: #ffffff;
+    --van-search-input-background: rgba(255, 255, 255, 0.15);
+    --van-field-input-text-color: #ffffff;
+
+    .van-search__content {
+        background: transparent;
+    }
+
+    .van-field__control::placeholder {
+        color: #5470c4;
+    }
 }
 </style>
 <style>
