@@ -1,48 +1,42 @@
 <template>
-    <view class="container">
-        <view class="head-item">
-            <view class="search-item">
-                <u-search
-                    placeholder="请输入流程名称"
+    <div class="container">
+        <div class="head-item">
+            <div class="search-item">
+                <van-search
                     v-model="searchValue"
+                    placeholder="请输入流程名称"
                     shape="square"
-                    bg-color="#8EAAFF"
-                    placeholder-color="#5470C4"
-                    color="#fff"
-                    search-icon-color="#ffffffE5"
-                    :clearabled="true"
-                    :show-action="false"
+                    :clearable="true"
+                    class="create-search"
                     @search="getList(true)"
                     @clear="getList(true)"
-                ></u-search>
-            </view>
-        </view>
-        <u-collapse :accordion="false" :head-style="headStyle" :item-style="collapseItem" v-if="list.length > 0">
-            <u-collapse-item :title="item.category" v-for="(item, index) in list" :key="index" :open="true">
-                <view
+                />
+            </div>
+        </div>
+        <van-collapse v-if="list.length > 0" v-model="activeNames" :border="false">
+            <van-collapse-item v-for="(item, index) in list" :key="index" :name="String(index)">
+                <template #title>
+                    <span class="collapse-title">{{ item.category }}</span>
+                </template>
+                <div
                     class="item flex-between flex-c"
-                    v-for="(c, cIndex) in item.processList"
+                    v-for="(processItem, cIndex) in item.processList"
                     :key="cIndex"
-                    @click="
-                        () => {
-                            refreshToken(c);
-                        }
-                    "
+                    @click="handleProcessClick(processItem)"
                 >
-                    <image
-                        :src="c.icon || wfImage + `/create/icon_${parseInt(cIndex % 10)}.png`"
-                        mode=""
+                    <img
                         class="icon"
-                    ></image>
-                    <view class="flex-one r">
-                        <view class="name txt-cut1">{{ c.processDefinitionName }}</view>
-                        <!-- <view class="num txt-cut1">{{ c.processDefinitionKey }}</view> -->
-                    </view>
-                </view>
-            </u-collapse-item>
-        </u-collapse>
+                        :src="processItem.icon || `${wfImage}/create/icon_${parseInt(cIndex % 10)}.png`"
+                        alt="workflow icon"
+                    />
+                    <div class="flex-one r">
+                        <div class="name txt-cut1">{{ processItem.processDefinitionName }}</div>
+                    </div>
+                </div>
+            </van-collapse-item>
+        </van-collapse>
         <wf-empty v-else text="工作再忙，也要记得喝水"></wf-empty>
-    </view>
+    </div>
 </template>
 <script>
 import { defineComponent } from 'vue';
@@ -56,16 +50,7 @@ export default defineComponent({
         return {
             wfImage: this.wfImage || 'https://oss.nutflow.vip/rider',
             searchValue: '',
-            collapseItem: {
-                padding: '0 30rpx',
-                borderBottom: '1px solid #f0f2f5',
-            },
-            headStyle: {
-                color: '#333',
-                fontSize: '30rpx',
-                fontWeight: 'bold',
-                padding: '40rpx 0',
-            },
+            activeNames: [],
             list: [],
             loading: false,
         };
@@ -81,11 +66,17 @@ export default defineComponent({
             try {
                 const res = await list(param);
                 this.list = (res && res.data) || [];
+                this.$nextTick(() => {
+                    this.activeNames = this.list.map((_, idx) => String(idx));
+                });
             } catch (error) {
                 console.error('[workflow] 获取流程定义失败', error);
             } finally {
                 this.loading = false;
             }
+        },
+        handleProcessClick(processDefinition) {
+            this.refreshToken(processDefinition);
         },
         refreshToken(processDefinition) {
             const userInfo = uni.getStorageSync('loginInfo');
@@ -102,39 +93,53 @@ export default defineComponent({
 </script>
 <style lang="scss" scoped>
 @import '../../static/styles/common';
+
 .container {
     .head-item {
         width: 100%;
-        height: 150rpx;
-        padding: 50rpx 30rpx 0;
+        height: 150px;
+        padding: 50px 30px 0;
         background: url('https://oss.nutflow.vip/rider/mine/head_bg.png') no-repeat;
         background-size: 100% 100%;
     }
-    /* #ifdef MP-WEIXIN*/
-    .head-item {
-        height: 290rpx;
-        padding: 184rpx 30rpx 0;
+
+    .search-item {
+        .create-search {
+            --van-search-background: rgba(142, 170, 255, 1);
+            --van-search-placeholder-color: #5470c4;
+            --van-search-input-text-color: #ffffff;
+            --van-search-left-icon-color: #ffffff;
+        }
     }
-    /* #endif */
+
+    .van-collapse-item__wrapper {
+        padding: 0 30px;
+    }
+
+    .collapse-title {
+        color: #333;
+        font-size: 20px;
+        font-weight: 600;
+    }
 
     .item {
-        margin-bottom: 30rpx;
+        margin-bottom: 20px;
+        cursor: pointer;
+
         .r {
             word-break: break-all;
         }
+
         .icon {
-            width: 86rpx;
-            height: 86rpx;
+            width: 56px;
+            height: 56px;
             border-radius: 50%;
-            margin-right: 20rpx;
+            margin-right: 16px;
         }
+
         .name {
-            font-size: 30rpx;
+            font-size: 18px;
             color: #333;
-        }
-        .num {
-            font-size: 26rpx;
-            color: #a09fa5;
         }
     }
 }

@@ -1,77 +1,71 @@
 <template>
-	<view class="detail">
-		<!-- 头部 -->
-		<view class="detail-head flex-between flex-c">
-			<u-avatar :text="process.startUsername" bg-color="#FAB022"></u-avatar>
-			<view class="flex-one c">
-				<view class="leave bold">{{ process.processDefinitionName }}</view>
-				<view class="name">{{ process.startUsername }}</view>
-			</view>
-			<u-tag v-if="process.status == 'todo'" text="审核中" type="success" size="mini" />
-			<u-tag v-else-if="process.status == 'delay'" text="已超时" type="error" size="mini" />
-			<template v-else-if="process.status == 'done'">
-				<u-tag v-if="process.processIsFinished == 'unfinished'" text="审核中" type="success" size="mini" />
-				<u-tag v-else-if="process.processIsFinished == 'finished'" text="已结束" type="success" size="mini" />
-				<u-tag v-else-if="process.processIsFinished == 'terminate'" text="已终止" type="error" size="mini" />
-				<u-tag v-else-if="process.processIsFinished == 'withdraw'" text="已撤销" type="error" size="mini" />
-				<u-tag v-else-if="process.processIsFinished == 'recall'" text="已撤回" type="error" size="mini" />
-				<u-tag v-else-if="process.processIsFinished == 'reject'" text="已驳回" type="error" size="mini" />
-			</template>
-		</view>
-		<!-- tab -->
-		<u-tabs :list="tabList" :is-scroll="false" :current="current" @change="current = $event"></u-tabs>
-		<!-- 内容 -->
-		<view class="content">
-                        <u-card
-                                v-show="current == 0"
-                                margin="20rpx 0"
-                                padding="0"
-                                :border="false"
-                                :body-style="{ backgroundColor: '#f6f6f6' }"
-                        >
-                                <template #default>
-                                        <view class="split-line">
-                                                <wf-form
-                                                        v-if="init"
-							ref="form"
-							v-model="form"
-							:option="option"
-							@submit="handleSubmit"
-						></wf-form>
-					</view>
-                                        <view class="split-line" v-if="process.status == 'todo'">
-                                                <wkf-exam-form
-                                                        ref="examineForm"
-                                                        :process="process"
-                                                        :comment.sync="comment"
-                                                        @user-select="handleUserSelect"
-                                                ></wkf-exam-form>
-                                        </view>
-                                </template>
-                        </u-card>
-			<!-- <u-card v-if="current == 1" :show-head="false" margin="20rpx 0"> -->
-			<view class="" style="padding: 30rpx" v-show="current == 1"><wkf-flow :flow="flow"></wkf-flow></view>
-			<!-- </u-card> -->
-		</view>
-		<!-- 选人 -->
-		<wkf-user-select
-			ref="user-select"
-			:check-type="checkType"
-			:default-checked="defaultChecked"
-			@onConfirm="handleUserSelectConfirm"
-		></wkf-user-select>
-		<wkf-button
-			:loading="submitLoading"
-			:button-list="buttonList"
-			:process="process"
-			:comment="comment"
-			@examine="handleExamine"
-			@user-select="handleUserSelect"
-			@rollback="handleRollbackTask"
-			@terminate="handleTerminateProcess"
-			@withdraw="handleWithdrawTask"
-		></wkf-button>
-	</view>
+    <div class="detail">
+        <!-- 头部 -->
+        <div class="detail-head flex-between flex-c">
+            <div class="detail-avatar">{{ getAvatarText(process.startUsername) }}</div>
+            <div class="flex-one c">
+                <div class="leave bold">{{ process.processDefinitionName }}</div>
+                <div class="name">{{ process.startUsername }}</div>
+            </div>
+            <van-tag v-if="process.status === 'todo'" type="success" size="small">审核中</van-tag>
+            <van-tag v-else-if="process.status === 'delay'" type="danger" size="small">已超时</van-tag>
+            <template v-else-if="process.status === 'done'">
+                <van-tag v-if="process.processIsFinished === 'unfinished'" type="success" size="small">审核中</van-tag>
+                <van-tag v-else-if="process.processIsFinished === 'finished'" type="success" size="small">已结束</van-tag>
+                <van-tag v-else-if="process.processIsFinished === 'terminate'" type="danger" size="small">已终止</van-tag>
+                <van-tag v-else-if="process.processIsFinished === 'withdraw'" type="danger" size="small">已撤销</van-tag>
+                <van-tag v-else-if="process.processIsFinished === 'recall'" type="danger" size="small">已撤回</van-tag>
+                <van-tag v-else-if="process.processIsFinished === 'reject'" type="danger" size="small">已驳回</van-tag>
+            </template>
+        </div>
+        <!-- tab -->
+        <van-tabs v-model:active="current" :border="false">
+            <van-tab v-for="(tab, index) in tabList" :key="tab.name" :name="String(index)" :title="tab.name" />
+        </van-tabs>
+        <!-- 内容 -->
+        <div class="content">
+            <div class="detail-card" v-show="current === '0'">
+                <div class="split-line">
+                    <wf-form
+                        v-if="init"
+                        ref="form"
+                        v-model="form"
+                        :option="option"
+                        @submit="handleSubmit"
+                    ></wf-form>
+                </div>
+                <div class="split-line" v-if="process.status === 'todo'">
+                    <wkf-exam-form
+                        ref="examineForm"
+                        :process="process"
+                        :comment.sync="comment"
+                        @user-select="handleUserSelect"
+                    ></wkf-exam-form>
+                </div>
+            </div>
+            <div class="flow-wrapper" v-show="current === '1'">
+                <wkf-flow :flow="flow"></wkf-flow>
+            </div>
+        </div>
+        <!-- 选人 -->
+        <wkf-user-select
+            ref="user-select"
+            :check-type="checkType"
+            :default-checked="defaultChecked"
+            @onConfirm="handleUserSelectConfirm"
+        ></wkf-user-select>
+        <wkf-button
+            :loading="submitLoading"
+            :button-list="buttonList"
+            :process="process"
+            :comment="comment"
+            @examine="handleExamine"
+            @user-select="handleUserSelect"
+            @rollback="handleRollbackTask"
+            @terminate="handleTerminateProcess"
+            @withdraw="handleWithdrawTask"
+        ></wkf-button>
+    </div>
 </template>
 <script>
 import { defineComponent } from 'vue';
@@ -119,7 +113,7 @@ export default defineComponent({
             },
             vars: [],
             submitLoading: false,
-            current: 0,
+            current: '0',
             tabList: [{ name: '申请信息' }, { name: '流转信息' }],
         };
     },
@@ -132,6 +126,10 @@ export default defineComponent({
         },
     },
     methods: {
+        getAvatarText(name = '') {
+            if (!name) return '';
+            return name.length <= 2 ? name : name.slice(-2);
+        },
         resolveRouteParams(query = {}) {
             const { p } = query;
             if (!p) return;
@@ -143,162 +141,195 @@ export default defineComponent({
                 console.error('[workflow] 无法解析请假明细参数', error);
             }
         },
-                // 获取任务详情
-                getDetail(taskId, processInsId) {
-                        this.getTaskDetail(taskId, processInsId).then(res => {
-                                const { process, form } = res
-                                const { variables, status } = process
+        // 获取任务详情
+        getDetail(taskId, processInsId) {
+            this.getTaskDetail(taskId, processInsId).then((res) => {
+                const { process, form } = res;
+                const { variables, status } = process;
 
-				this.form = variables
+                this.form = variables;
 
-				let { taskForm } = form
-				const { option, vars } = this.handleResolveOption(this.option, taskForm, status)
-				this.option = option
-				this.vars = vars
-				
-				setTimeout(() => {
-					this.init = true
-				}, 100)
-			})
-		},
-		handleResolveOption(option, taskForm, status) {
-			const { column, group } = option
-			let vars = []
-			if (status != 'todo') {
-				// 已办，删除字段默认值
-				let event = ['change', 'blur', 'click', 'focus']
-				option.detail = true
-				if (column && column.length > 0) {
-					// 处理column
-					column.forEach(col => {
-						if (col.type == 'dynamic')
-							col.children.column.forEach(cc => {
-								delete cc.value
-								delete cc.event
-								event.forEach(e => delete cc[e])
-							})
-						else {
-							delete col.value
-							delete col.event
-							event.forEach(e => delete col[e])
-						}
-					})
-				}
+                const { taskForm } = form;
+                const { option, vars } = this.handleResolveOption(this.option, taskForm, status, process);
+                this.option = option;
+                this.vars = vars;
 
-				if (group && group.length > 0) {
-					// 处理group
-					group.forEach(gro => {
-						if (gro.column && gro.column.length > 0) {
-							gro.column.forEach(col => {
-								if (col.type == 'dynamic')
-									col.children.column.forEach(cc => {
-										delete cc.value
-										delete cc.event
-										event.forEach(e => delete cc[e])
-									})
-								else {
-									delete col.value
-									delete col.event
-									event.forEach(e => delete col[e])
-								}
-							})
-						}
-					})
-				}
-			} else {
-				const columnFilter = this.filterAvueColumn(column, taskForm)
-				const columnArr = columnFilter.column
-				vars = columnFilter.vars || []
+                setTimeout(() => {
+                    this.init = true;
+                }, 100);
+            });
+        },
+        handleResolveOption(option, taskForm, status, process = {}) {
+            const { column, group } = option;
+            let vars = [];
+            if (status !== 'todo') {
+                // 已办，删除字段默认值
+                const events = ['change', 'blur', 'click', 'focus'];
+                option.detail = true;
+                if (column && column.length > 0) {
+                    column.forEach((col) => {
+                        if (col.type === 'dynamic') {
+                            col.children.column.forEach((childCol) => {
+                                delete childCol.value;
+                                delete childCol.event;
+                                events.forEach((evt) => delete childCol[evt]);
+                            });
+                        } else {
+                            delete col.value;
+                            delete col.event;
+                            events.forEach((evt) => delete col[evt]);
+                        }
+                    });
+                }
 
-				const groupArr = []
-				if (group && group.length > 0) {
-					// 处理group
-					group.forEach(gro => {
-						const groupFilter = this.filterAvueColumn(gro.column, taskForm)
-						gro.column = groupFilter.column
-						vars = vars.concat(groupFilter.vars)
-						if (gro.column.length > 0) groupArr.push(gro)
-					})
-				}
+                if (group && group.length > 0) {
+                    group.forEach((gro) => {
+                        if (gro.column && gro.column.length > 0) {
+                            gro.column.forEach((col) => {
+                                if (col.type === 'dynamic') {
+                                    col.children.column.forEach((childCol) => {
+                                        delete childCol.value;
+                                        delete childCol.event;
+                                        events.forEach((evt) => delete childCol[evt]);
+                                    });
+                                } else {
+                                    delete col.value;
+                                    delete col.event;
+                                    events.forEach((evt) => delete col[evt]);
+                                }
+                            });
+                        }
+                    });
+                }
+            } else {
+                const columnFilter = this.filterAvueColumn(column, taskForm);
+                const columnArr = columnFilter.column;
+                vars = columnFilter.vars || [];
 
-				if (process.variables && process.variables.serialNumber) {
-					columnArr.unshift({
-						label: '流水号',
-						prop: 'serialNumber',
-						span: 24,
-						detail: true
-					})
-				}
-				option.column = columnArr
-				option.group = groupArr
-				option.labelPosition = 'top'
-			}
-			return { option, vars }
-		},
-		// 审核
-		handleExamine(pass) {
-			this.submitLoading = true
-			this.$refs.form.validate((valid, done) => {
-				if (valid) {
-					const variables = {}
-					this.vars.forEach(v => {
-						if (v != 'comment' && this.form[v]) variables[v] = this.form[v]
-					})
+                const groupArr = [];
+                if (group && group.length > 0) {
+                    group.forEach((gro) => {
+                        const groupFilter = this.filterAvueColumn(gro.column, taskForm);
+                        gro.column = groupFilter.column;
+                        vars = vars.concat(groupFilter.vars || []);
+                        if (gro.column.length > 0) groupArr.push(gro);
+                    });
+                }
+
+                if (process.variables && process.variables.serialNumber) {
+                    columnArr.unshift({
+                        label: '流水号',
+                        prop: 'serialNumber',
+                        span: 24,
+                        detail: true,
+                    });
+                }
+                option.column = columnArr;
+                option.group = groupArr;
+                option.labelPosition = 'top';
+            }
+            return { option, vars };
+        },
+        // 审核
+        handleExamine(pass) {
+            this.submitLoading = true;
+            this.$refs.form.validate((valid, done) => {
+                if (valid) {
+                    const variables = {};
+                    this.vars.forEach((v) => {
+                        if (v !== 'comment' && this.form[v]) variables[v] = this.form[v];
+                    });
 
                     this.handleCompleteTask(pass, variables)
-                            .then(() => {
-                                    uni.showToast({
-                                            title: '处理成功'
-                                    })
-                                    setTimeout(() => {
-                                            this.handleNavigateTo({
-                                                    name: 'WorkflowMine',
-                                                    query: { current: '0' },
-                                                    replace: true,
-                                            })
-                                            done()
-                                    }, 1000)
-						})
-						.catch(() => {
-							done()
-							this.submitLoading = false
-						})
-				} else {
-					done()
-					this.submitLoading = false
-				}
-			})
-		}
-	}
+                        .then(() => {
+                            uni.showToast({
+                                title: '处理成功',
+                            });
+                            setTimeout(() => {
+                                this.handleNavigateTo(
+                                    {
+                                        name: 'WorkflowMine',
+                                        query: { current: '0' },
+                                        replace: true,
+                                    }
+                                );
+                                done();
+                            }, 1000);
+                        })
+                        .catch(() => {
+                            done();
+                            this.submitLoading = false;
+                        });
+                } else {
+                    done();
+                    this.submitLoading = false;
+                }
+            });
+        },
+    },
 });
 </script>
 <style lang="scss" scoped>
 @import '../../../static/styles/common';
-page {
-	background: #f6f6f6;
-}
-.split-line {
-	border-bottom: 20rpx solid #f6f6f6;
-	min-height: 45px;
-}
+
 .detail {
-	&-head {
-		background: #fff;
-		padding: 30rpx;
-		.c {
-			margin: 0 20rpx;
-			.leave {
-				color: #333;
-				font-size: 34rpx;
-			}
-			.name {
-				color: #666;
-				font-size: 30rpx;
-			}
-		}
-	}
-	.content {
-		padding: 0 0 30rpx;
-	}
+    background: #f6f6f6;
+    min-height: 100%;
+
+    &-head {
+        background: #fff;
+        padding: 20px;
+
+        .c {
+            margin: 0 16px;
+
+            .leave {
+                color: #333;
+                font-size: 22px;
+            }
+
+            .name {
+                color: #666;
+                font-size: 18px;
+            }
+        }
+    }
+}
+
+.detail-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: #fab022;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-weight: 600;
+    font-size: 18px;
+}
+
+.split-line {
+    border-bottom: 20px solid #f6f6f6;
+    min-height: 45px;
+    background: #fff;
+}
+
+.detail-card {
+    background: #f6f6f6;
+    margin: 16px 0;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.flow-wrapper {
+    padding: 20px;
+    background: #fff;
+    border-radius: 12px;
+    margin: 16px 0;
+}
+
+.content {
+    padding: 0 0 20px;
 }
 </style>

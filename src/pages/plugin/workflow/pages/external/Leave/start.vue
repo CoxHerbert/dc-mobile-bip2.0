@@ -1,18 +1,25 @@
 <template>
-	<view class="wf-form-start">
-		<view class="split-line"><wf-form v-model="form" :option="option" @submit="handleSubmit"></wf-form></view>
-		<view class="split-line">
-			<wkf-exam-form v-if="showExamForm" ref="examineForm" :process="process" @user-select="handleUserSelect"></wkf-exam-form>
-		</view>
+    <div class="wf-form-start">
+        <div class="split-line">
+            <wf-form v-model="form" :option="option" @submit="handleSubmit"></wf-form>
+        </div>
+        <div class="split-line">
+            <wkf-exam-form
+                v-if="showExamForm"
+                ref="examineForm"
+                :process="process"
+                @user-select="handleUserSelect"
+            ></wkf-exam-form>
+        </div>
 
-		<!-- 选人 -->
-		<wkf-user-select
-			ref="user-select"
-			:check-type="checkType"
-			:default-checked="defaultChecked"
-			@onConfirm="handleUserSelectConfirm"
-		></wkf-user-select>
-	</view>
+        <!-- 选人 -->
+        <wkf-user-select
+            ref="user-select"
+            :check-type="checkType"
+            :default-checked="defaultChecked"
+            @onConfirm="handleUserSelectConfirm"
+        ></wkf-user-select>
+    </div>
 </template>
 
 <script>
@@ -121,11 +128,12 @@ export default defineComponent({
 </script>
 
 <style scoped>
-page {
-	background: #f6f6f6;
+.wf-form-start {
+    background: #f6f6f6;
 }
+
 .split-line {
-	border-bottom: 20rpx solid #f6f6f6;
-	min-height: 45px;
+    border-bottom: 20px solid #f6f6f6;
+    min-height: 45px;
 }
 </style>
