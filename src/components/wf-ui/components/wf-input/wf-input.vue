@@ -1,40 +1,60 @@
 <template>
-	<view class="wf-input">
-		<u-input
-			v-model="text"
-			:type="typeDic[column.type]"
-			:maxlength="column.maxlength || 350"
-			:placeholder="getPlaceholder(column, column.type)"
-			:disabled="disabled"
-			:height="column.height || '70rpx'"
-			:border="column.border || false"
-			@click.native="handleClick"
-			@focus="handleFocus"
-			@blur="handleBlur"
-		/>
-	</view>
+  <div class="wf-input">
+    <van-field
+      v-model="text"
+      :type="typeDic[column.type]"
+      :maxlength="column.maxlength || 350"
+      :placeholder="getPlaceholder(column, column.type)"
+      :disabled="disabled"
+      :autosize="column.type === 'textarea' ? autosizeConfig : undefined"
+      :border="column.border || false"
+      :rows="column.rows"
+      clearable
+      @click="handleClick"
+      @focus="handleFocus"
+      @blur="handleBlur"
+    />
+  </div>
 </template>
 
 <script>
-import Props from '../../mixins/props.js'
-export default {
-	name: 'wf-input',
-	mixins: [Props],
-	data() {
-		return {
-			typeDic: {
-				input: 'text',
-				number: 'digit',
-				textarea: 'textarea',
-				password: 'password'
-			}
-		}
-	}
-}
+import { defineComponent } from 'vue';
+import { Field } from 'vant';
+import Props from '../../mixins/props.js';
+
+export default defineComponent({
+  name: 'WfInput',
+  components: {
+    [Field.name]: Field,
+  },
+  mixins: [Props],
+  computed: {
+    autosizeConfig() {
+      const { column } = this;
+      if (column?.autosize && typeof column.autosize === 'object') {
+        return column.autosize;
+      }
+      if (column?.type === 'textarea') {
+        return { minHeight: 88 };
+      }
+      return undefined;
+    },
+  },
+  data() {
+    return {
+      typeDic: {
+        input: 'text',
+        number: 'digit',
+        textarea: 'textarea',
+        password: 'password',
+      },
+    };
+  },
+});
 </script>
 
 <style lang="scss" scoped>
 .wf-input {
-	width: 100%;
+  width: 100%;
 }
 </style>

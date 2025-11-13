@@ -1,49 +1,73 @@
 <template>
-	<view class="wf-checkbox">
-		<u-checkbox-group :disabled="disabled" @change="onChange" @click.native="handleClick">
-			<u-checkbox v-model="item.checked" v-for="(item, index) in list" :key="index" :name="item[valueKey]">
-				{{ item[labelKey] }}
-			</u-checkbox>
-		</u-checkbox-group>
-	</view>
+  <div class="wf-checkbox" @click="handleClick">
+    <van-checkbox-group v-model="checkedValues" :disabled="disabled">
+      <van-checkbox
+        v-for="(item, index) in normalizedOptions"
+        :key="index"
+        :name="item[valueKey]"
+      >
+        {{ item[labelKey] }}
+      </van-checkbox>
+    </van-checkbox-group>
+  </div>
 </template>
 
 <script>
-import Props from '../../mixins/props.js'
-export default {
-	name: 'wf-checkbox',
-	mixins: [Props],
-	watch: {
-		dic: {
-			handler(val) {
-				if (!this.validateNull(val)) this.initValue()
-			},
-			deep: true
-		}
-	},
-	data() {
-		return { list: [] }
-	},
-	methods: {
-		initValue() {
-			if (this.validateNull(this.dic)) return
-			if (this.text) {
-				const valueArr = (this.text + '').split(',')
-				this.dic.forEach((v, i) => {
-					if (valueArr.find(val => val == v[this.valueKey])) v.checked = true
-					else v.checked = false
-				})
-			}
-			this.list = this.deepClone(this.dic)
-		},
-		onChange(val) {
-			this.text = val
-		}
-	}
-}
+import { defineComponent } from 'vue';
+import { Checkbox, CheckboxGroup } from 'vant';
+import Props from '../../mixins/props.js';
+
+export default defineComponent({
+  name: 'WfCheckbox',
+  components: {
+    [Checkbox.name]: Checkbox,
+    [CheckboxGroup.name]: CheckboxGroup,
+  },
+  mixins: [Props],
+  data() {
+    return {
+      checkedValues: [],
+    };
+  },
+  computed: {
+    normalizedOptions() {
+      return this.deepClone(this.dic || []);
+    },
+  },
+  watch: {
+    dic: {
+      handler(val) {
+        if (!this.validateNull(val)) {
+          this.syncFromText();
+        }
+      },
+      deep: true,
+    },
+    text: {
+      immediate: true,
+      handler() {
+        this.syncFromText();
+      },
+    },
+    checkedValues(val) {
+      this.text = val.join(',');
+    },
+  },
+  methods: {
+    syncFromText() {
+      if (this.validateNull(this.text)) {
+        this.checkedValues = [];
+        return;
+      }
+      const values = (this.text + '').split(',');
+      this.checkedValues = values.filter((item) => item !== '');
+    },
+  },
+});
 </script>
 
 <style lang="scss" scoped>
 .wf-checkbox {
+  width: 100%;
 }
 </style>
