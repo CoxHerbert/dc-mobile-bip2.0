@@ -1,120 +1,170 @@
 <template>
-	<view class="wf-upload">
-		<upload :file-list="fileList" :limit="limit" :disabled="disabled" @remove="onRemove" @choose="onChoose"></upload>
-	</view>
+  <div class="wf-upload">
+    <van-uploader
+      v-model="fileList"
+      :max-count="limit"
+      :max-size="fileSize * 1024 * 1024"
+      :disabled="disabled"
+      :after-read="handleAfterRead"
+      :before-delete="handleBeforeDelete"
+      :upload-text="column.buttonText || '点击上传'"
+      :multiple="column.multiple !== false"
+    />
+  </div>
 </template>
 
 <script>
-import { DIC_HTTP_PROPS } from '../../util/variable.js'
-import { getAsVal } from '../../util/index.js'
+import { defineComponent } from 'vue';
+import { Uploader } from 'vant';
+import { DIC_HTTP_PROPS } from '../../util/variable.js';
+import { getAsVal, deepClone } from '../../util/index.js';
+import { uploadFile } from '../../util/uploader.js';
+import Props from '../../mixins/props.js';
 
-import Props from '../../mixins/props.js'
-
-import upload from './components/upload.vue'
-
-export default {
-	name: 'wf-upload',
-	mixins: [Props],
-	components: { upload },
-	computed: {
-		action() {
-			return this.column.action
-		},
-		limit() {
-			return this.column.limit || Number.MAX_VALUE
-		},
-		fileSize() {
-			return this.column.fileSize || Number.MAX_VALUE
-		},
-		header() {
-			return this.column.header || {}
-		},
-		formData() {
-			return this.column.data || {}
-		},
-		propsHttp() {
-			return { ...DIC_HTTP_PROPS, ...this.column.propsHttp }
-		},
-		fileName() {
-			return this.propsHttp.fileName || "file";
-		},
-	},
-	data() {
-		return { fileList: [] }
-	},
-	methods: {
-		initValue() {
-			const value = this.deepClone(this.text)
-			if (!this.validateNull(value)) {
-				let fileList = []
-				if (typeof value == 'object') {
-					value.forEach(v => {
-						if (typeof v == 'object') {
-							fileList.push({
-								url: v[this.valueKey],
-								name: v[this.labelKey],
-								progress: 100
-							})
-						} else if (typeof v == 'string') {
-							fileList.push({ url: v, progress: 100 })
-						}
-					})
-				} else if (typeof value == 'string') {
-					value.split(',').forEach(v => fileList.push({ url: v, progress: 100 }))
-				}
-				this.fileList = fileList
-			}
-		},
-		onChoose(list) {
-			list.forEach(file => {
-				const { path, tempFilePath } = file
-				const params = {
-					// #ifdef MP-ALIPAY
-					fileType: 'image/video/audio', // 仅支付宝小程序，且必填。
-					// #endif
-					filePath: path || tempFilePath,
-					name: this.fileName,
-					header: this.header,
-					formData: this.formData
-				}
-				this.$http.upload(this.action, params).then(res => {
-					const data = getAsVal(res, this.propsHttp.res)
-					const url = getAsVal(data, this.propsHttp.url)
-					const name = getAsVal(data, this.propsHttp.name)
-					this.$set(this.fileList, this.fileList.length, { url, name, progress: 100 })
-					this.onChange()
-				})
-			})
-		},
-		onRemove(index) {
-			this.$delete(this.fileList, index)
-			this.onChange()
-		},
-		onChange() {
-			let arr = []
-			if (this.validateNull(this.propsHttp.name) || this.stringMode) {
-				this.fileList.forEach(f => {
-					if (f.progress == 100) arr.push(f.url)
-				})
-			} else {
-				this.fileList.forEach(f => {
-					if (f.progress == 100) arr.push({ [this.labelKey]: f.name, [this.valueKey]: f.url })
-				})
-			}
-			this.text = arr
-		}
-	}
-}
+export default defineComponent({
+  name: 'WfUpload',
+  components: {
+    [Uploader.name]: Uploader,
+  },
+  mixins: [Props],
+  data() {
+    return {
+      fileList: [],
+    };
+  },
+  computed: {
+    action() {
+      return this.column.action;
+    },
+    limit() {
+      return this.column.limit || Number.MAX_VALUE;
+    },
+    fileSize() {
+      return this.column.fileSize || Number.MAX_VALUE;
+    },
+    header() {
+      return this.column.header || {};
+    },
+    formData() {
+      return this.column.data || {};
+    },
+    propsHttp() {
+      return { ...DIC_HTTP_PROPS, ...this.column.propsHttp };
+    },
+    fileName() {
+      return this.propsHttp.fileName || 'file';
+    },
+  },
+  watch: {
+    text: {
+      immediate: true,
+      handler() {
+        this.initValue();
+      },
+    },
+    fileList: {
+      deep: true,
+      handler() {
+        this.syncText();
+      },
+    },
+  },
+  methods: {
+    initValue() {
+      const value = deepClone(this.text);
+      if (this.validateNull(value)) {
+        this.fileList = [];
+        return;
+      }
+      const normalized = [];
+      if (Array.isArray(value)) {
+        value.forEach((item) => {
+          if (typeof item === 'object') {
+            normalized.push({
+              url: item[this.valueKey],
+              name: item[this.labelKey],
+              status: 'done',
+            });
+          } else if (typeof item === 'string') {
+            normalized.push({ url: item, status: 'done' });
+          }
+        });
+      } else if (typeof value === 'string') {
+        value.split(',').forEach((url) => {
+          if (url) {
+            normalized.push({ url, status: 'done' });
+          }
+        });
+      }
+      this.fileList = normalized;
+    },
+    handleAfterRead(files) {
+      const queue = Array.isArray(files) ? files : [files];
+      queue.forEach((item) => {
+        const target = {
+          file: item.file || item,
+          status: 'uploading',
+          message: '上传中',
+          url: item.content || '',
+          name: item.file?.name || item.name,
+        };
+        this.fileList.push(target);
+        this.uploadSingle(target);
+      });
+    },
+    async uploadSingle(target) {
+      try {
+        const payload = await uploadFile({
+          action: this.action,
+          file: target.file,
+          headers: this.header,
+          data: this.formData,
+          fieldName: this.fileName,
+        });
+        const data = getAsVal(payload, this.propsHttp.res);
+        const url = getAsVal(data || payload, this.propsHttp.url) || target.url;
+        const name = getAsVal(data || payload, this.propsHttp.name) || target.name || url;
+        Object.assign(target, {
+          url,
+          name,
+          status: 'done',
+          message: '',
+        });
+      } catch (error) {
+        Object.assign(target, {
+          status: 'failed',
+          message: error.message || '上传失败',
+        });
+      }
+    },
+    handleBeforeDelete(file, detail) {
+      if (this.disabled) {
+        return false;
+      }
+      this.fileList.splice(detail.index, 1);
+      return false;
+    },
+    syncText() {
+      const completed = this.fileList.filter((item) => item.status === 'done');
+      let arr;
+      if (this.validateNull(this.propsHttp.name) || this.stringMode) {
+        arr = completed.map((f) => f.url);
+      } else {
+        arr = completed.map((f) => ({ [this.labelKey]: f.name, [this.valueKey]: f.url }));
+      }
+      const current = Array.isArray(this.text) ? JSON.stringify(this.text) : this.text;
+      const next = Array.isArray(arr) ? JSON.stringify(arr) : arr;
+      if (current === next) {
+        return;
+      }
+      this.text = arr;
+    },
+  },
+});
 </script>
 
 <style lang="scss" scoped>
 .wf-upload {
-	width: 100%;
-	.attachment {
-		color: rgb(41, 121, 255);
-		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
-	}
+  width: 100%;
 }
 </style>
