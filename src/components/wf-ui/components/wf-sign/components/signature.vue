@@ -1,194 +1,195 @@
 <template>
-	<u-popup safe-area-inset-bottom border-radius="25" closeable mode="bottom" v-model="show">
-		<div class="container">
-			<view class="title">签名</view>
-			<view class="handCenter" :style="getStyle">
-				<canvas v-if="show" class="hand-writing" disable-scroll @touchstart="uploadScaleStart" @touchmove="uploadScaleMove" @touchend="uploadScaleEnd" :id="canvasId" :canvas-id="canvasId"></canvas>
-			</view>
-			<view class="buttons">
-				<span class="button button_rewrite" @click="rewrite">重签</span>
-				<span class="button button_submit" @click="submit">提交</span>
-			</view>
-		</div>
-		<u-toast ref="uToast" />
-	</u-popup>
+  <van-popup v-model:show="show" round position="bottom" closeable :style="{ height: '70vh' }">
+    <div class="wf-signature">
+      <div class="wf-signature__title">签名</div>
+      <div class="wf-signature__canvas" :style="canvasStyle">
+        <canvas
+          ref="canvas"
+          class="wf-signature__board"
+          @pointerdown.prevent="onPointerDown"
+          @pointermove.prevent="onPointerMove"
+          @pointerup.prevent="onPointerUp"
+          @pointerleave.prevent="onPointerUp"
+        ></canvas>
+      </div>
+      <div class="wf-signature__buttons">
+        <van-button size="small" type="default" class="wf-signature__button" @click="rewrite">重签</van-button>
+        <van-button size="small" type="primary" class="wf-signature__button" @click="submit">提交</van-button>
+      </div>
+    </div>
+  </van-popup>
 </template>
 
 <script>
-	import Handwriting from './signature.js';
-	export default {
-		data() {
-			return {
-				canvasId: `nf-sign-${Date.now() + Math.ceil(Math.random() * 999)}`,
-				show: false,
-				width: '100%',
-				height: '500rpx'
-			};
-		},
-		computed: {
-			getStyle() {
-				return `width:${this.width};height:${this.height};`;
-			}
-		},
-		watch: {
-			show(val) {
-				if (!val) {
-					// 关闭
-					if (this.reject) {
-						this.reject({ type: 'close' });
-					}
-				}
-			}
-		},
-		methods: {
-			sign({ width = '660rpx', height = '500rpx', color = '#000' } = {}) {
-				return new Promise((resolve, reject) => {
-					this.width = width;
-					this.height = height;
-					this.show = true;
+import { computed, defineComponent, nextTick, ref } from 'vue';
+import { Button, Popup, Toast } from 'vant';
 
-					this.resolve = resolve;
-					this.reject = reject;
+export default defineComponent({
+  name: 'SignaturePad',
+  components: {
+    [Popup.name]: Popup,
+    [Button.name]: Button,
+  },
+  setup(_, { expose }) {
+    const show = ref(false);
+    const canvas = ref(null);
+    const width = ref(660);
+    const height = ref(500);
+    const lineColor = ref('#000');
+    const ctx = ref(null);
+    const drawing = ref(false);
+    const hasDrawn = ref(false);
+    let resolveHandler;
+    let rejectHandler;
 
-					this.$nextTick(() => {
-						let query = uni.createSelectorQuery().in(this);
-						let ctx = uni.createCanvasContext(`${this.canvasId}`, this);
-						
-						this.handwriting = new Handwriting({
-							lineColor: color,
-							slideValue: 50, // 0, 25, 50, 75, 100
-							canvasName: this.canvasId,
-							ctx: ctx
-						});
+    const canvasStyle = computed(() => ({
+      width: `${width.value}px`,
+      height: `${height.value}px`,
+    }));
 
-						query
-							.select('.handCenter')
-							.boundingClientRect(rect => {
-								this.handwriting.setSize(rect);
-							})
-							.exec();
-					});
-				});
-			},
-			close() {
-				this.show = false;
-			},
-			rewrite() {
-				this.handwriting.clear();
-			},
-			submit() {
-				let self = this;
+    const initCanvas = () => {
+      const el = canvas.value;
+      if (!el) return;
+      const dpr = window.devicePixelRatio || 1;
+      el.width = width.value * dpr;
+      el.height = height.value * dpr;
+      el.style.width = `${width.value}px`;
+      el.style.height = `${height.value}px`;
+      const context = el.getContext('2d');
+      context.scale(dpr, dpr);
+      context.lineWidth = 2;
+      context.lineCap = 'round';
+      context.lineJoin = 'round';
+      context.strokeStyle = lineColor.value;
+      context.fillStyle = '#fff';
+      context.fillRect(0, 0, width.value, height.value);
+      ctx.value = context;
+      hasDrawn.value = false;
+    };
 
-				if (this.handwriting.isEmpty()) {
-					// 未签字
-					return this.$refs.uToast.show({
-						title: '请在框内签字',
-						type: 'error'
-					});
-				}
+    const getPoint = (event) => {
+      const rect = canvas.value.getBoundingClientRect();
+      return {
+        x: event.clientX - rect.left,
+        y: event.clientY - rect.top,
+      };
+    };
 
-				uni.canvasToTempFilePath({
-						canvasId: this.canvasId,
-						quality: 1.0,
-						fileType: 'png',
+    const onPointerDown = (event) => {
+      if (!ctx.value) return;
+      drawing.value = true;
+      hasDrawn.value = true;
+      const { x, y } = getPoint(event);
+      ctx.value.beginPath();
+      ctx.value.moveTo(x, y);
+    };
 
-						success(res) {
-							// self.resolve(res);
-							let path = res.tempFilePath;
-							self.reject = null;
-							self.resolve(path);
-						},
-						fail(err) {
-							let reject = self.reject;
-							self.reject = null;
-							reject({ type: 'err', err: err });
-						},
-						complete() {
-							// 失败关闭吧
-							self.show = false;
-						}
-					},
-					this
-				);
-			},
-			uploadScaleStart(event) {
-				this.handwriting.uploadScaleStart(event);
-			},
-			uploadScaleMove(event) {
-				this.handwriting.uploadScaleMove(event);
-			},
-			uploadScaleEnd(event) {
-				this.handwriting.uploadScaleEnd(event);
-			},
-			toJSON(e) {
-				return e;
-			}
-		}
-	};
+    const onPointerMove = (event) => {
+      if (!drawing.value || !ctx.value) return;
+      const { x, y } = getPoint(event);
+      ctx.value.lineTo(x, y);
+      ctx.value.stroke();
+    };
+
+    const onPointerUp = () => {
+      if (!drawing.value) return;
+      drawing.value = false;
+      if (ctx.value) {
+        ctx.value.closePath();
+      }
+    };
+
+    const rewrite = () => {
+      if (!ctx.value) return;
+      ctx.value.clearRect(0, 0, width.value, height.value);
+      ctx.value.fillStyle = '#fff';
+      ctx.value.fillRect(0, 0, width.value, height.value);
+      hasDrawn.value = false;
+    };
+
+    const submit = () => {
+      if (!hasDrawn.value) {
+        Toast.fail('请在框内签字');
+        return;
+      }
+      const el = canvas.value;
+      const dataUrl = el.toDataURL('image/png', 1.0);
+      if (resolveHandler) {
+        resolveHandler(dataUrl);
+      }
+      resolveHandler = null;
+      rejectHandler = null;
+      show.value = false;
+    };
+
+    const sign = ({ width: w = '660', height: h = '500', color = '#000' } = {}) => {
+      return new Promise((resolve, reject) => {
+        const widthNumber = Number(String(w).replace(/px|rpx/g, ''));
+        const heightNumber = Number(String(h).replace(/px|rpx/g, ''));
+        width.value = Number.isNaN(widthNumber) ? 660 : widthNumber;
+        height.value = Number.isNaN(heightNumber) ? 500 : heightNumber;
+        lineColor.value = color || '#000';
+        resolveHandler = resolve;
+        rejectHandler = reject;
+        show.value = true;
+        nextTick(() => {
+          initCanvas();
+        });
+      });
+    };
+
+    expose({ sign });
+
+    return {
+      show,
+      canvas,
+      canvasStyle,
+      onPointerDown,
+      onPointerMove,
+      onPointerUp,
+      rewrite,
+      submit,
+    };
+  },
+});
 </script>
 
-<style scoped>
-	.container {
-		width: 100%;
-		/* height: 822rpx; */
-		position: relative;
-		background-color: #fff;
-	}
+<style lang="scss" scoped>
+.wf-signature {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 16px;
+  box-sizing: border-box;
 
-	.title {
-		width: 100%;
-		display: flex;
-		justify-content: center;
-		color: #3e3e3e;
-		font-size: 38rpx;
-		font-weight: bold;
-		margin-top: 35rpx;
-	}
+  &__title {
+    text-align: center;
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 16px;
+  }
 
-	.handCenter {
-		margin: 35rpx auto 0;
-		border: 1px dashed #979797;
-	}
+  &__canvas {
+    flex: 1;
+    border: 1px dashed #979797;
+    background: #fff;
+  }
 
-	.hand-writing {
-		width: 100%;
-		height: 100%;
-	}
+  &__board {
+    width: 100%;
+    height: 100%;
+    touch-action: none;
+  }
 
-	.buttons {
-		width: 570rpx;
-		margin: 40rpx auto;
-		display: flex;
-		justify-content: space-between;
-	}
+  &__buttons {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 16px;
+  }
 
-	/* .btn {
-	width: 270rpx;
-	height: 78rpx;
-	display: flex;
-	justify-content: center;
-	align-items: center;
-	border-radius: 14rpx;
-	font-size: 33rpx;
-} */
-	.buttons .button {
-		width: 200rpx;
-		height: 78rpx;
-		display: flex;
-		justify-content: center;
-		align-items: center;
-		border-radius: 14rpx;
-		font-size: 33rpx;
-	}
-
-	.buttons .button.button_rewrite {
-		border: 1px solid #ff3b3b;
-		background-color: #ffffff;
-		color: #ff4343;
-	}
-
-	.buttons .button.button_submit {
-		background-color: #ff824e;
-		color: #fff;
-	}
+  &__button {
+    flex: 1;
+    margin: 0 8px;
+  }
+}
 </style>

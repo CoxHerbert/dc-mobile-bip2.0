@@ -19,12 +19,13 @@
 </template>
 
 <script>
+import { defineComponent } from 'vue';
 import { Field, Popup } from 'vant';
 import Props from '../../mixins/props.js';
 import Cascader from './components/cascader';
 
-export default {
-  name: 'wf-cascader',
+export default defineComponent({
+  name: 'WfCascader',
   components: {
     [Field.name]: Field,
     [Popup.name]: Popup,
@@ -63,7 +64,7 @@ export default {
       this.show = false;
     },
   },
-};
+});
 </script>
 
 <style lang="scss" scoped>
