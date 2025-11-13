@@ -36,9 +36,12 @@
     </view>
 </template>
 <script>
+import { defineComponent } from 'vue';
 import { todoList, doneList, myDoneList, sendList } from '../../api/process.js';
 import wkfCard from '../../components/wf-card/index';
-export default {
+
+export default defineComponent({
+    name: 'WorkflowMinePage',
     components: { wkfCard },
     data() {
         return {
@@ -46,7 +49,7 @@ export default {
             searchValue: '',
             current: 0,
             tabList: [
-                { name: '我的待办', method: 'todoList' },
+                { name: '我的待办', method: 'todoList', count: 0 },
                 { name: '我的请求', method: 'sendList' },
                 { name: '我的已办', method: 'myDoneList' },
                 { name: '办结事宜', method: 'doneList' },
@@ -59,70 +62,105 @@ export default {
             },
             list: [],
             scrollTop: 0,
+            loading: false,
         };
     },
-    onLoad({ current }) {
-        if (current) {
-            this.handleTabClick(Number(current), false);
-        }
-        this.$nextTick(() => {
-            uni.startPullDownRefresh();
-        });
+    created() {
+        this.applyRoute(this.$route.query);
     },
-    onPullDownRefresh() {
+    mounted() {
         this.getList(true);
+        window.addEventListener('scroll', this.handleScroll, { passive: true });
     },
-    onReachBottom() {
-        if (this.loadStatus == 'nomore') return;
-        this.getList();
+    beforeUnmount() {
+        window.removeEventListener('scroll', this.handleScroll);
     },
-    onPageScroll(e) {
-        this.scrollTop = e.scrollTop;
+    watch: {
+        '$route.query.current'(value) {
+            if (typeof value === 'undefined') return;
+            const index = Number(value);
+            if (!Number.isNaN(index) && index !== this.current) {
+                this.current = index;
+                this.getList(true);
+            }
+        },
     },
     methods: {
         todoList,
         sendList,
         myDoneList,
         doneList,
-        getList(clear = false) {
-            if (clear) {
-                this.page = {
-                    current: 1,
-                    size: 5,
-                };
+        applyRoute(query = {}) {
+            if (query.current !== undefined) {
+                const index = Number(query.current);
+                if (!Number.isNaN(index)) {
+                    this.current = index;
+                }
             }
-            this.showBtn = false;
-            const { current, size } = this.page;
-            const { method } = this.tabList[this.current];
-            if (!method) return;
+        },
+        async getList(clear = false) {
+            if (this.loading) return;
+            if (clear) {
+                this.page.current = 1;
+                this.list = [];
+            }
+            const handlerName = this.tabList[this.current]?.method;
+            if (!handlerName || typeof this[handlerName] !== 'function') {
+                return;
+            }
+            this.loading = true;
             this.loadStatus = 'loading';
-            this[this.tabList[this.current].method]({
-                processDefinitionName: this.searchValue,
-                current,
-                size,
-            }).then((res) => {
-                const { records, total } = res.data;
-                if (this.current == 0) {
-                    this.$set(this.tabList[0], 'count', total);
+            const { current, size } = this.page;
+            try {
+                const res = await this[handlerName]({
+                    processDefinitionName: this.searchValue,
+                    current,
+                    size,
+                });
+                const { records = [], total = 0 } = res.data || {};
+                if (this.current === 0) {
+                    this.tabList[0].count = total;
                     this.showBtn = true;
-                }
-                if (records.length < size) this.loadStatus = 'nomore';
-                else this.loadStatus = 'loadmore';
-                if (clear) {
-                    this.list = records;
                 } else {
-                    this.list = this.list.concat(records);
+                    this.showBtn = false;
                 }
-                this.page.current++;
-                uni.stopPullDownRefresh();
-            });
+                this.list = clear ? records : this.list.concat(records);
+                this.page.current += 1;
+                this.loadStatus = records.length < size ? 'nomore' : 'loadmore';
+            } catch (error) {
+                console.error('[workflow] 获取任务列表失败', error);
+                this.loadStatus = 'loadmore';
+            } finally {
+                this.loading = false;
+            }
         },
         handleTabClick(index, request = true) {
+            if (this.current === index && request) {
+                this.getList(true);
+                return;
+            }
             this.current = index;
-            if (request) this.getList(true);
+            this.updateRoute(index);
+            if (request) {
+                this.getList(true);
+            }
+        },
+        updateRoute(index) {
+            const query = { ...this.$route.query, current: String(index) };
+            this.$router.replace({ name: 'WorkflowMine', query });
+        },
+        handleScroll() {
+            const scrollTop = window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0;
+            this.scrollTop = scrollTop;
+            const { innerHeight } = window;
+            const { scrollHeight } = document.documentElement;
+            if (this.loadStatus !== 'loadmore' || this.loading) return;
+            if (scrollTop + innerHeight >= scrollHeight - 30) {
+                this.getList();
+            }
         },
     },
-};
+});
 </script>
 <style lang="scss" scoped>
 @import '../../static/styles/common';

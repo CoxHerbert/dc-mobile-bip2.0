@@ -70,13 +70,15 @@
 </template>
 
 <script>
+import { defineComponent } from 'vue';
+import { Base64 } from '@/utils/base64.js';
 import wkfUserSelect from '../../components/wf-user-select/index';
 import wkfExamForm from '../../components/wf-exam-form/index';
 import exForm from '../../mixins/ex-form';
 import draft from '../../mixins/draft';
-// import { needHideTitleBar } from '@/utils/utils';
-export default {
-    name: 'wf-form-start',
+
+export default defineComponent({
+    name: 'WorkflowFormStartPage',
     mixins: [exForm, draft],
     components: { wkfExamForm, wkfUserSelect },
     computed: {
@@ -85,7 +87,6 @@ export default {
             return !hideComment || !hideCopy || !hideExamine;
         },
     },
-
     data() {
         return {
             form: {},
@@ -94,22 +95,28 @@ export default {
             zcoldValue: {},
         };
     },
-    onLoad(option) {
-        // const hideTitlebar  = needHideTitleBar();
-        // if(hideTitlebar) {
-        //     uni.setNavigationBarStyle({ 
-        //         navigationStyle: 'custom', // 隐藏默认导航栏 
-        //     });
-        // }
-        const { p } = option;
-        if (p) {
-            const param = JSON.parse(Buffer.from(p, 'base64').toString());
-            const { processId } = param;
-            if (processId) this.getForm(processId);
-        }
+    created() {
+        this.resolveRouteParams(this.$route.query);
     },
-
+    watch: {
+        '$route.query.p'(value) {
+            this.resolveRouteParams({ p: value });
+        },
+    },
     methods: {
+        resolveRouteParams(query = {}) {
+            const { p } = query;
+            if (!p) return;
+            try {
+                const param = JSON.parse(Base64.decode(p));
+                const { processId } = param;
+                if (processId) {
+                    this.getForm(processId);
+                }
+            } catch (error) {
+                console.error('[workflow] 无法解析流程参数', error);
+            }
+        },
         getForm(processDefId) {
             this.getStartForm(processDefId).then((res) => {
                 let { form, appForm, startForm } = res;
@@ -146,13 +153,15 @@ export default {
             });
         },
         handleSubmit(form, done) {
-			console.log(done)
             this.submitLoading = true;
             form.processId = this.process.id;
             form['wf_platform'] = 'app';
             this.handleStartProcess(form)
                 .then(() => {
-                    this.handleNavigateTo('/pages/plugin/workflow/pages/mine/index?current=1', '发起成功');
+                    this.handleNavigateTo(
+                        { name: 'WorkflowMine', query: { current: '1' }, replace: true },
+                        '发起成功'
+                    );
                 })
                 .catch(() => {
                     done();
@@ -160,7 +169,7 @@ export default {
                 });
         },
     },
-};
+});
 </script>
 
 <style lang="scss" scoped>

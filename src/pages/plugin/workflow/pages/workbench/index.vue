@@ -24,75 +24,82 @@
                     @click="handleJump(girdList[0])"
                 ></u-section>
             </view>
-            <wkf-card v-if="list.length > 0" :list="list" show-btn @refresh="getTodoList()"></wkf-card>
+            <wkf-card v-if="list.length > 0" :list="list" show-btn @refresh="refreshTodo"></wkf-card>
         </view>
         <wf-empty v-else text="工作再忙，也要记得喝水"></wf-empty>
 
         <image
             class="creat"
             src="@/static/images/tabbar/creact.png"
-            @click.stop="handleJump({ url: '/pages/plugin/workflow/pages/create/index' })"
+            @click.stop="handleJump(girdList[1])"
         ></image>
     </view>
 </template>
 <script>
-import { todoList } from '../../api/process.js';
+import { defineComponent } from 'vue';
+import { mapState, mapActions } from 'pinia';
+import { useWorkflowStore } from '@/store/workflow.js';
 import wkfCard from '../../components/wf-card/index';
-export default {
+
+export default defineComponent({
+    name: 'WorkflowWorkbenchPage',
     components: { wkfCard },
     data() {
         return {
-            // #ifdef MP
-            wfImage: this.wfImage,
-            // #endif
+            wfImage: this.wfImage || 'https://oss.nutflow.vip/rider',
             girdList: [
                 {
                     name: '我的待办',
                     type: 'db',
-                    url: '/pages/plugin/workflow/pages/mine/index?current=0',
+                    location: { name: 'WorkflowMine', query: { current: '0' } },
                 },
                 {
                     name: '我的请求',
                     type: 'qq',
-                    url: '/pages/plugin/workflow/pages/mine/index?current=1',
+                    location: { name: 'WorkflowMine', query: { current: '1' } },
                 },
                 {
                     name: '我的已办',
                     type: 'yb',
-                    url: '/pages/plugin/workflow/pages/mine/index?current=2',
+                    location: { name: 'WorkflowMine', query: { current: '2' } },
                 },
                 {
                     name: '办结事宜',
                     type: 'bj',
-                    url: '/pages/plugin/workflow/pages/mine/index?current=3',
+                    location: { name: 'WorkflowMine', query: { current: '3' } },
                 },
             ],
-            list: [],
-            total: 0,
         };
     },
-    onShow() {
-        this.$nextTick(() => {
-            uni.startPullDownRefresh();
-        });
+    computed: {
+        ...mapState(useWorkflowStore, {
+            list: (store) => store.todoItems,
+            total: (store) => store.todoTotal,
+        }),
     },
-    onPullDownRefresh() {
-        this.getTodoList();
+    mounted() {
+        this.refreshTodo();
     },
     methods: {
-        getTodoList() {
-            todoList({ current: 1, size: 5 }).then((res) => {
-                const { records, total } = res.data;
-                this.list = records;
-                this.total = total;
-                uni.stopPullDownRefresh();
-            });
+        ...mapActions(useWorkflowStore, ['fetchTodoList']),
+        async refreshTodo() {
+            try {
+                await this.fetchTodoList({ current: 1, size: 5 });
+            } catch (error) {
+                console.error('[workflow] 获取待办失败', error);
+            }
         },
         handleJump(item) {
-            uni.navigateTo({ url: item.url });
+            if (!item || !item.location) {
+                return;
+            }
+            const { location } = item;
+            const { replace = false, ...locationConfig } = location;
+            const navigation = replace ? this.$router.replace : this.$router.push;
+            navigation.call(this.$router, locationConfig);
         },
     },
-};
+});
 </script>
 <style>
 page {
@@ -118,75 +125,46 @@ page {
         background: url('https://oss.nutflow.vip/rider/home/head_bg.png') no-repeat;
         background-size: 100% 100%;
         /* #ifdef MP-WEIXIN */
-        height: 460rpx;
-        padding: 90rpx 30rpx 0;
+        padding-top: 120rpx;
         /* #endif */
-        .title {
-            color: #fff;
-            font-size: 50rpx;
-        }
-        .tips {
-            margin-top: 15rpx;
-            display: inline-block;
-            padding: 7rpx 16rpx;
-            background: #628bff;
-            border-radius: 6rpx;
-            font-size: 24rpx;
-            color: #fff;
-        }
     }
     .grid-item {
-        width: 690rpx;
-        height: 210rpx;
-        background: #fff;
-        box-shadow: 0px 2rpx 10rpx 0rpx rgba(204, 204, 204, 0.14);
-        border-radius: 20rpx;
-        margin: -170rpx auto 20rpx;
         display: flex;
-        justify-content: space-around;
-        align-items: center;
+        flex-wrap: wrap;
+        padding: 0 24rpx;
+        margin-top: -120rpx;
         .item {
-            text-align: center;
+            width: 50%;
+            padding: 40rpx 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
             .icon {
-                width: 70rpx;
-                height: 70rpx;
-                margin-bottom: 10rpx;
+                width: 120rpx;
+                height: 120rpx;
+                margin-bottom: 20rpx;
             }
             .name {
-                font-size: 26rpx;
-                color: #222;
-                font-weight: 600;
+                font-size: 30rpx;
+                color: #333;
             }
         }
     }
     .card-item {
+        margin-top: 20rpx;
+        padding: 0 24rpx 40rpx;
         .title {
-            position: relative;
-            padding: 30rpx;
-            background: #fff;
-            margin: 20rpx 30rpx -12rpx;
-            border-top-right-radius: 16rpx;
-            border-top-left-radius: 16rpx;
-        }
-
-        .line {
-            position: absolute;
-            top: 50rpx;
-            left: 74rpx;
-            width: 92rpx;
-            height: 14rpx;
-            background: linear-gradient(90deg, rgba(75, 198, 255, 1) 0%, rgba(186, 156, 242, 1) 100%);
-        }
-        .title:after {
-            position: absolute;
-            bottom: 0;
-            left: 30rpx;
-            right: 30rpx;
-            content: '';
-            width: 630rpx;
-            height: 2rpx;
-            background: #d3d3d3;
-            z-index: 1;
+            display: flex;
+            align-items: center;
+            margin-bottom: 20rpx;
+            .line {
+                width: 6rpx;
+                height: 32rpx;
+                background: #5470c4;
+                border-radius: 3rpx;
+                margin-right: 16rpx;
+            }
         }
     }
 }

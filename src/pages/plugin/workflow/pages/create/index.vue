@@ -45,15 +45,16 @@
     </view>
 </template>
 <script>
+import { defineComponent } from 'vue';
 import { list } from '../../api/process.js';
 import exForm from '../../mixins/ex-form.js';
-export default {
+
+export default defineComponent({
+    name: 'WorkflowCreatePage',
     mixins: [exForm],
     data() {
         return {
-            // #ifdef MP
-            wfImage: this.wfImage,
-            // #endif
+            wfImage: this.wfImage || 'https://oss.nutflow.vip/rider',
             searchValue: '',
             collapseItem: {
                 padding: '0 30rpx',
@@ -66,51 +67,38 @@ export default {
                 padding: '40rpx 0',
             },
             list: [],
+            loading: false,
         };
     },
-    onLoad() {
-        this.$nextTick(() => {
-            uni.startPullDownRefresh();
-        });
-    },
-    onPullDownRefresh() {
-        this.getList();
+    mounted() {
+        this.getList(true);
     },
     methods: {
-        getList() {
-            const param = { processDefinitionName: this.searchValue };
-            // #ifdef H5
-            param.platform = 'h5';
-            // #endif
-            // #ifdef MP-WEIXIN
-            param.platform = 'mp-wx';
-            // #endif
-            // #ifdef APP
-            switch (uni.getSystemInfoSync().platform) {
-                case 'android':
-                    param.platform = 'android';
-                    break;
-                case 'ios':
-                    param.platform = 'ios';
-                    break;
-                default:
-                    break;
+        async getList(reset = false) {
+            if (this.loading) return;
+            this.loading = true;
+            const param = { processDefinitionName: this.searchValue, platform: 'h5' };
+            try {
+                const res = await list(param);
+                this.list = (res && res.data) || [];
+            } catch (error) {
+                console.error('[workflow] 获取流程定义失败', error);
+            } finally {
+                this.loading = false;
             }
-            // #endif
-            list(param).then((res) => {
-                this.list = res.data || [];
-                uni.stopPullDownRefresh();
-            });
         },
-        refreshToken(c) {
-            let userInfo = uni.getStorageSync('loginInfo');
-            userInfo &&
-                this.$store.dispatch('refreshTokenFn', userInfo).then((res) => {
-                    this.dynamicRoute(c, 'start');
+        refreshToken(processDefinition) {
+            const userInfo = uni.getStorageSync('loginInfo');
+            if (userInfo) {
+                this.$store.dispatch('refreshTokenFn', userInfo).finally(() => {
+                    this.dynamicRoute(processDefinition, 'start');
                 });
+            } else {
+                this.dynamicRoute(processDefinition, 'start');
+            }
         },
     },
-};
+});
 </script>
 <style lang="scss" scoped>
 @import '../../static/styles/common';

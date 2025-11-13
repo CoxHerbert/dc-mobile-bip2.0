@@ -11,7 +11,10 @@
 </template>
 
 <script>
-export default {
+import { defineComponent } from 'vue';
+
+export default defineComponent({
+    name: 'WorkflowTabbar',
     data() {
         return {
             list: [
@@ -21,6 +24,7 @@ export default {
                     text: '工作台',
                     customIcon: false,
                     pagePath: '/pages/plugin/workflow/pages/workbench/index',
+                    location: { name: 'WorkflowWorkbench' },
                 },
                 {
                     iconPath: 'https://oss.nutflow.vip/rider/public/create.png',
@@ -29,27 +33,35 @@ export default {
                     midButton: true,
                     customIcon: false,
                     pagePath: '/pages/plugin/workflow/pages/create/index',
+                    location: { name: 'WorkflowCreate' },
                 },
                 {
                     iconPath: 'https://oss.nutflow.vip/rider/public/mine.png',
                     selectedIconPath: 'https://oss.nutflow.vip/rider/public/mine_act.png',
                     text: '我的',
-                    // count: 23,
-                    // isDot: false,
                     customIcon: false,
                     pagePath: '/pages/plugin/workflow/pages/mine/index',
+                    location: { name: 'WorkflowMine', query: { current: '0' } },
                 },
             ],
         };
     },
     methods: {
         handleChange(index) {
-            const pages = getCurrentPages();
-            let currentRoute = '/' + pages[pages.length - 1].route;
-            let url = this.list[index].pagePath;
-            if (currentRoute == url) return;
-            uni.redirectTo({ url });
+            const item = this.list[index];
+            if (!item) return;
+            const { location } = item;
+            if (!location) return;
+            const isActive =
+                (location.name && this.$route.name === location.name) ||
+                (!location.name && this.$route.path === (location.path || item.pagePath));
+            if (isActive) return;
+            const navigate = location.replace ? this.$router.replace : this.$router.push;
+            const target = location.name
+                ? { name: location.name, query: location.query }
+                : { path: location.path || item.pagePath, query: location.query };
+            navigate.call(this.$router, target);
         },
     },
-};
+});
 </script>

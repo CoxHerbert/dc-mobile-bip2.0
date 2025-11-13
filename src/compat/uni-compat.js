@@ -1,18 +1,49 @@
 import { Toast } from 'vant';
 
-function wrapNavigate(method) {
+function resolveRouteLocation(url) {
+  if (!url) {
+    return null;
+  }
+  const [path, queryString = ''] = url.split('?');
+  const query = {};
+  if (queryString) {
+    queryString.split('&').forEach((part) => {
+      if (!part) return;
+      const [key, value = ''] = part.split('=');
+      if (!key) return;
+      query[decodeURIComponent(key)] = decodeURIComponent(value.replace(/\+/g, ' '));
+    });
+  }
+  return { path, query };
+}
+
+function wrapNavigate(router, method) {
   return (options = {}) => {
-    const url = typeof options === 'string' ? options : options.url;
-    if (!url) {
+    const target = typeof options === 'string' ? { url: options } : options || {};
+    const location = resolveRouteLocation(target.url || target.path || target.fullPath);
+    if (!location) {
       console.warn(`[uni-compat] ${method} called without url`);
       return;
     }
-    if (method === 'reLaunch') {
-      window.location.replace(url);
-    } else if (method === 'redirectTo') {
-      window.location.assign(url);
+    const { replace = method !== 'navigateTo', force = false } = target;
+    if (router && router[replace ? 'replace' : 'push']) {
+      const navigation = router[replace ? 'replace' : 'push'];
+      navigation.call(router, { path: location.path, query: location.query }).catch((error) => {
+        if (force && error && error.name === 'NavigationDuplicated') {
+          router.replace({ path: location.path, query: location.query });
+        }
+      });
     } else {
-      window.location.href = url;
+      const rawUrl = target.url || location.path;
+      const hasQuery = target.url ? target.url.includes('?') : Object.keys(location.query).length > 0;
+      const queryPart = target.url && target.url.includes('?') ? target.url.split('?')[1] : '';
+      if (method === 'reLaunch') {
+        window.location.replace(rawUrl + (hasQuery && !rawUrl.includes('?') && queryPart ? `?${queryPart}` : ''));
+      } else if (method === 'redirectTo') {
+        window.location.assign(rawUrl);
+      } else {
+        window.location.href = rawUrl;
+      }
     }
   };
 }
@@ -75,7 +106,7 @@ function createRequest() {
   };
 }
 
-export function initUniCompat(adapter) {
+export function initUniCompat(adapter, router) {
   if (typeof window === 'undefined') {
     return;
   }
@@ -96,10 +127,16 @@ export function initUniCompat(adapter) {
     });
   };
 
-  uni.navigateTo = wrapNavigate('navigateTo');
-  uni.redirectTo = wrapNavigate('redirectTo');
-  uni.reLaunch = wrapNavigate('reLaunch');
-  uni.navigateBack = () => window.history.back();
+  uni.navigateTo = wrapNavigate(router, 'navigateTo');
+  uni.redirectTo = wrapNavigate(router, 'redirectTo');
+  uni.reLaunch = wrapNavigate(router, 'reLaunch');
+  uni.navigateBack = ({ delta = 1 } = {}) => {
+    if (router) {
+      router.go(-Math.abs(delta || 1));
+    } else {
+      window.history.go(-Math.abs(delta || 1));
+    }
+  };
 
   uni.getStorageSync = storageProxy((key) => window.localStorage.getItem(key));
   uni.setStorageSync = storageProxy((key, value) => window.localStorage.setItem(key, value));

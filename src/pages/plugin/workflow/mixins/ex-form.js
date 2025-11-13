@@ -10,6 +10,8 @@ import {
     addMultiInstance,
     withdrawTask,
 } from '../api/task.js';
+import { Base64 } from '@/utils/base64.js';
+import { useWorkflowStore } from '@/store/workflow.js';
 
 import defaultValues from './default-values.js';
 export default {
@@ -31,36 +33,40 @@ export default {
         // 动态路由跳转
         dynamicRoute(row, type, async = false) {
             const { id, taskId, processInstanceId, processId, formKey, appFormUrl } = row;
-            let param = Buffer.from(
+            const param = Base64.encode(
                 JSON.stringify({
                     processId: id,
                     taskId,
                     processInsId: processInstanceId || processId,
                 })
-            ).toString('base64');
+            );
 
+            let target;
             if (formKey && formKey.startsWith('wf_ex_')) {
+                const formName = formKey.substring(6);
                 if (appFormUrl) {
-                    // 配置了自定义路由
-                    uni.navigateTo({
-                        url: appFormUrl + `?p=${param}`,
-                    });
+                    const separator = appFormUrl.includes('?') ? '&' : '?';
+                    target = `${appFormUrl}${separator}p=${param}`;
                 } else {
-                    uni.navigateTo({
-                        url: `/pages/plugin/workflow/pages/external/${formKey.substring(6)}/${type}?p=${param}`,
-                    });
+                    const name = `WorkflowExternal${formName}${type === 'start' ? 'Start' : 'Detail'}`;
+                    target = { name, query: { p: param } };
                 }
             } else {
-                if (async) {
-                    return new Promise((resolve) => {
-                        resolve({ row, type, param });
-                    });
-                } else {
-                    uni.navigateTo({
-                        url: `/pages/plugin/workflow/pages/form/${type}?p=${param}`,
-                    });
-                }
+                const name = type === 'start' ? 'WorkflowFormStart' : 'WorkflowFormDetail';
+                target = { name, query: { p: param } };
             }
+
+            if (async) {
+                return Promise.resolve({ row, type, param, target });
+            }
+
+            if (typeof target === 'string') {
+                return this.$router.push(target);
+            }
+
+            const { replace = false, ...location } = target;
+            const navigation = replace ? this.$router.replace : this.$router.push;
+            return navigation.call(this.$router, location);
         },
         // 根据可读可写，过滤avue column
         filterAvueColumn(column, taskForm, props = { label: 'label', prop: 'prop' }) {
@@ -189,6 +195,10 @@ export default {
                             flow: flow,
                         };
                         this.buttonList = button;
+                        const workflowStore = useWorkflowStore();
+                        workflowStore.setProcessDetail(process);
+                        workflowStore.setProcessFlow(this.flow);
+                        workflowStore.setButtonList(button);
                         // uni.setNavigationBarTitle({
                         // 	title: `流程详情 - ${process.processDefinitionName}`
                         // })
@@ -256,7 +266,10 @@ export default {
             this.submitLoading = true;
             const { taskId } = this.process;
             rollbackTask({ comment: this.comment, nodeId, taskId }).then(() => {
-                this.handleNavigateTo('/pages/plugin/workflow/pages/mine/index?current=0', '回退成功');
+                this.handleNavigateTo(
+                    { name: 'WorkflowMine', query: { current: '0' }, replace: true },
+                    '回退成功'
+                );
             });
         },
         /**
@@ -266,7 +279,10 @@ export default {
             this.submitLoading = true;
             const { taskId } = this.process;
             terminateProcess({ taskId, comment: this.comment }).then(() => {
-                this.handleNavigateTo('/pages/plugin/workflow/pages/mine/index?current=0', '操作成功');
+                this.handleNavigateTo(
+                    { name: 'WorkflowMine', query: { current: '0' }, replace: true },
+                    '操作成功'
+                );
             });
         },
         // 人员选择弹窗
@@ -304,13 +320,19 @@ export default {
                 this.submitLoading = true;
                 transferTask(param).then(() => {
                     // 转办
-                    this.handleNavigateTo('/pages/plugin/workflow/pages/mine/index?current=0', '转办成功');
+                    this.handleNavigateTo(
+                        { name: 'WorkflowMine', query: { current: '0' }, replace: true },
+                        '转办成功'
+                    );
                 });
             } else if (type == 'delegate') {
                 // 委托
                 this.submitLoading = true;
                 delegateTask(param).then(() => {
-                    this.handleNavigateTo('/pages/plugin/workflow/pages/mine/index?current=0', '委托成功');
+                    this.handleNavigateTo(
+                        { name: 'WorkflowMine', query: { current: '0' }, replace: true },
+                        '委托成功'
+                    );
                 });
             } else if (type == 'addInstance') {
                 // 加签
@@ -340,24 +362,32 @@ export default {
             this.submitLoading = true;
             const { taskId } = this.process;
             withdrawTask({ taskId, withdrawType }).then(() => {
-                this.handleNavigateTo('/pages/plugin/workflow/pages/mine/index?current=0', '操作成功');
+                this.handleNavigateTo(
+                    { name: 'WorkflowMine', query: { current: '0' }, replace: true },
+                    '操作成功'
+                );
             });
         },
-        handleNavigateTo(url, msg) {
+        handleNavigateTo(target, msg) {
+            const navigate = () => {
+                if (!target) return;
+                if (typeof target === 'string') {
+                    this.$router.push(target);
+                    return;
+                }
+                const { replace, ...location } = target;
+                const navigation = replace ? this.$router.replace : this.$router.push;
+                navigation.call(this.$router, location);
+            };
             if (msg) {
                 uni.showToast({
                     title: msg,
                     icon: 'none',
                 });
-                setTimeout(() => {
-                    uni.redirectTo({
-                        url,
-                    });
-                }, 1000);
-            } else
-                uni.redirectTo({
-                    url,
-                });
+                setTimeout(navigate, 1000);
+            } else {
+                navigate();
+            }
         },
     },
 };

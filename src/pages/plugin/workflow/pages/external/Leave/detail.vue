@@ -75,74 +75,80 @@
 	</view>
 </template>
 <script>
-import WkfFlow from '../../../components/wf-flow/index'
-import WkfUserSelect from '../../../components/wf-user-select/index'
-import WkfButton from '../../../components/wf-button/index'
-import WkfExamForm from '../../../components/wf-exam-form/index'
+import { defineComponent } from 'vue';
+import { Base64 } from '@/utils/base64.js';
+import WkfFlow from '../../../components/wf-flow/index';
+import WkfUserSelect from '../../../components/wf-user-select/index';
+import WkfButton from '../../../components/wf-button/index';
+import WkfExamForm from '../../../components/wf-exam-form/index';
+import exForm from '../../../mixins/ex-form';
 
-import exForm from '../../../mixins/ex-form'
-// import { needHideTitleBar } from '@/utils/utils'
-export default {
-	name: 'wf-form-detail',
-	mixins: [exForm],
-	components: { WkfFlow, WkfUserSelect, WkfButton, WkfExamForm },
-	data() {
-		return {
-			init: false,
-			form: {},
-			option: {
-				labelPosition: 'top',
-				menuBtn: false,
-				column: [
-					{
-						label: '请假时间',
-						prop: 'datetime',
-						type: 'datetimerange',
-						format: 'yyyy-MM-dd HH:mm:ss',
-						valueFormat: 'yyyy-MM-dd HH:mm:ss',
-						rules: [{ required: true, message: '请选择请假时间' }]
-					},
-					{
-						label: '请假天数',
-						prop: 'days',
-						type: 'number',
-			 		rules: [{ required: true, message: '请输入请假天数' }]
-					},
-					{
-						label: '请假理由',
-						prop: 'reason',
-						type: 'textarea',
-						span: 24,
-						rules: [{ required: true, message: '请输入请假理由' }]
-					}
-				]
-			},
-			vars: [], // 需要提交的字段
-			submitLoading: false, // 提交时按钮loading
-			current: 0,
-			tabList: [{ name: '申请信息' }, { name: '流转信息' }]
-		}
-	},
-	onLoad(option) {
-		// const hideTitlebar  = needHideTitleBar();
-        // if(hideTitlebar) {
-        //     uni.setNavigationBarStyle({ 
-        //         navigationStyle: 'custom', // 隐藏默认导航栏 
-        //     });
-        // }
-		const { p } = option
-		if (p) {
-			const param = JSON.parse(Buffer.from(p, 'base64').toString())
-			const { taskId, processInsId } = param
-			if (taskId && processInsId) this.getDetail(taskId, processInsId)
-		}
-	},
-	methods: {
-		// 获取任务详情
-		getDetail(taskId, processInsId) {
-			this.getTaskDetail(taskId, processInsId).then(res => {
-				const { process, form } = res
-				const { variables, status } = process
+export default defineComponent({
+    name: 'WorkflowLeaveDetailPage',
+    mixins: [exForm],
+    components: { WkfFlow, WkfUserSelect, WkfButton, WkfExamForm },
+    data() {
+        return {
+            init: false,
+            form: {},
+            option: {
+                labelPosition: 'top',
+                menuBtn: false,
+                column: [
+                    {
+                        label: '请假时间',
+                        prop: 'datetime',
+                        type: 'datetimerange',
+                        format: 'yyyy-MM-dd HH:mm:ss',
+                        valueFormat: 'yyyy-MM-dd HH:mm:ss',
+                        rules: [{ required: true, message: '请选择请假时间' }],
+                    },
+                    {
+                        label: '请假天数',
+                        prop: 'days',
+                        type: 'number',
+                        rules: [{ required: true, message: '请输入请假天数' }],
+                    },
+                    {
+                        label: '请假理由',
+                        prop: 'reason',
+                        type: 'textarea',
+                        span: 24,
+                        rules: [{ required: true, message: '请输入请假理由' }],
+                    },
+                ],
+            },
+            vars: [],
+            submitLoading: false,
+            current: 0,
+            tabList: [{ name: '申请信息' }, { name: '流转信息' }],
+        };
+    },
+    created() {
+        this.resolveRouteParams(this.$route.query);
+    },
+    watch: {
+        '$route.query.p'(value) {
+            this.resolveRouteParams({ p: value });
+        },
+    },
+    methods: {
+        resolveRouteParams(query = {}) {
+            const { p } = query;
+            if (!p) return;
+            try {
+                const param = JSON.parse(Base64.decode(p));
+                const { taskId, processInsId } = param;
+                if (taskId && processInsId) this.getDetail(taskId, processInsId);
+            } catch (error) {
+                console.error('[workflow] 无法解析请假明细参数', error);
+            }
+        },
+                // 获取任务详情
+                getDetail(taskId, processInsId) {
+                        this.getTaskDetail(taskId, processInsId).then(res => {
+                                const { process, form } = res
+                                const { variables, status } = process
 
 				this.form = variables
 
@@ -240,17 +246,19 @@ export default {
 						if (v != 'comment' && this.form[v]) variables[v] = this.form[v]
 					})
 
-					this.handleCompleteTask(pass, variables)
-						.then(() => {
-							uni.showToast({
-								title: '处理成功'
-							})
-							setTimeout(() => {
-								uni.redirectTo({
-									url: '/pages/plugin/workflow/pages/mine/index?current=0'
-								})
-								done()
-							}, 1000)
+                    this.handleCompleteTask(pass, variables)
+                            .then(() => {
+                                    uni.showToast({
+                                            title: '处理成功'
+                                    })
+                                    setTimeout(() => {
+                                            this.handleNavigateTo({
+                                                    name: 'WorkflowMine',
+                                                    query: { current: '0' },
+                                                    replace: true,
+                                            })
+                                            done()
+                                    }, 1000)
 						})
 						.catch(() => {
 							done()
@@ -263,7 +271,7 @@ export default {
 			})
 		}
 	}
-}
+});
 </script>
 <style lang="scss" scoped>
 @import '../../../static/styles/common';

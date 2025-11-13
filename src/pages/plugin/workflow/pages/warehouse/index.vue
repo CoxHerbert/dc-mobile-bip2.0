@@ -14,21 +14,24 @@
     </view>
 </template>
 <script>
+import { defineComponent } from 'vue';
 import { Html5Qrcode } from 'html5-qrcode';
 
-export default {
+export default defineComponent({
+    name: 'WorkflowWarehousePage',
     data() {
         return {
-            qrCodeResult: '', // 扫码结果
-            isReaderVisible: false, // 控制扫码区域显示
-            scanner: null, // 保存扫码实例
+            qrCodeResult: '',
+            isReaderVisible: false,
+            scanner: null,
         };
     },
-
+    beforeUnmount() {
+        this.teardownScanner();
+    },
     methods: {
-        // 开始扫码
         async handleScan() {
-            this.isReaderVisible = true; // 显示扫码区域
+            this.isReaderVisible = true;
             this.$nextTick(async () => {
                 if (!this.scanner) {
                     this.scanner = new Html5Qrcode('reader');
@@ -36,12 +39,10 @@ export default {
                 try {
                     await this.scanner.start(
                         { facingMode: 'environment' },
-                        {
-                            fps: 300,
-                        },
+                        { fps: 15 },
                         (decodedText) => {
-                            this.qrCodeResult = decodedText; // 填充扫码结果
-                            this.stopScan(); // 关闭摄像头
+                            this.qrCodeResult = decodedText;
+                            this.stopScan();
                         },
                         (error) => {
                             console.log('扫描失败:', error);
@@ -49,22 +50,35 @@ export default {
                     );
                 } catch (err) {
                     console.error('获取摄像头失败:', err);
+                    this.isReaderVisible = false;
                 }
             });
         },
-        // 停止扫码
         stopScan() {
+            if (!this.scanner) {
+                this.isReaderVisible = false;
+                return;
+            }
+            this.scanner
+                .stop()
+                .then(() => {
+                    this.isReaderVisible = false;
+                })
+                .catch((err) => console.error('停止扫码失败:', err));
+        },
+        teardownScanner() {
             if (this.scanner) {
-                this.scanner
-                    .stop()
-                    .then(() => {
-                        this.isReaderVisible = false; // 隐藏扫码区域
-                    })
-                    .catch((err) => console.error('停止扫码失败:', err));
+                try {
+                    this.scanner.stop();
+                } catch (error) {
+                    console.warn('停止扫码异常', error);
+                }
+                this.scanner.clear();
+                this.scanner = null;
             }
         },
     },
-};
+});
 </script>
 
 <style scoped>
